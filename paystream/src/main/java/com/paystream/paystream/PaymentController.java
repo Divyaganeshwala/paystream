@@ -5,8 +5,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api")
 public class PaymentController {
 
+    private final RouterService routerService;
+
+    public PaymentController(RouterService routerService) {
+        this.routerService = routerService;
+    }
+
     @PostMapping("/payment")
     public String processPayment(@RequestBody String body) {
-        return "Payment received: " + body;
+
+        PaymentProcessor processor = routerService.selectProcessor();
+        return "Payment routed to: " + processor.name() + " | Request: " + body;
     }
 }
