@@ -30,7 +30,6 @@ public class PaymentController {
     public List<Payment> getAllPayments() {
         return paymentRepository.findAll();
     }
-
     @PostMapping("/simulate/failure/{processorName}")
     public String simulateFailure(@PathVariable String processorName) {
         try {
