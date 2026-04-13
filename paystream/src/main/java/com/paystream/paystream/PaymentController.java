@@ -58,9 +58,11 @@ public class PaymentController {
 
     @GetMapping("/health")
     public String getHealth() {
+
         StringBuilder sb = new StringBuilder();
         for (PaymentProcessor processor : PaymentProcessor.values()) {
             ProcessorHealth health = routerService.getHealthMap().get(processor);
+            health.isAvailable();
             sb.append(processor.name())
                     .append(" → state: ").append(health.getState())
                     .append(" | consecutiveFailures: ").append(health.getFailureCount())

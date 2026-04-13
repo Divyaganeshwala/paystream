@@ -4,6 +4,9 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.paystream.paystream.ProcessorHealth.CircuitState.CLOSED;
+import static com.paystream.paystream.ProcessorHealth.CircuitState.HALF_OPEN;
+
 @Service
 public class RouterService {
 
@@ -16,24 +19,22 @@ public class RouterService {
     }
 
     public PaymentProcessor selectProcessor() {
-        // Priority 1: HALF_OPEN processor gets a test payment
+        PaymentProcessor best = null;
+        double bestScore = -1;
+
         for (PaymentProcessor processor : PaymentProcessor.values()) {
             ProcessorHealth health = healthMap.get(processor);
-            if (health.getState() == ProcessorHealth.CircuitState.HALF_OPEN) {
-                return processor;
+            if (health.isAvailable()) {
+
+                if (health.getState() == ProcessorHealth.CircuitState.HALF_OPEN) return processor;
+                double score = health.getSuccessRate();
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = processor;
+                }
             }
         }
-
-        // Priority 2: pick first CLOSED processor
-        for (PaymentProcessor processor : PaymentProcessor.values()) {
-            ProcessorHealth health = healthMap.get(processor);
-            if (health.getState() == ProcessorHealth.CircuitState.CLOSED) {
-                return processor;
-            }
-        }
-
-        // All processors are OPEN
-        return null;
+        return best;
     }
 
     public void recordSuccess(PaymentProcessor processor) {
