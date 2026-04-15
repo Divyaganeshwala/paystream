@@ -11,11 +11,13 @@ import static com.paystream.paystream.ProcessorHealth.CircuitState.HALF_OPEN;
 public class RouterService {
 
     private final Map<PaymentProcessor, ProcessorHealth> healthMap = new HashMap<>();
+    private final RedisService redisService;
 
-    public RouterService() {
+    public RouterService(RedisService redisService) {
         for (PaymentProcessor processor : PaymentProcessor.values()) {
             healthMap.put(processor, new ProcessorHealth(processor));
         }
+        this.redisService= redisService;
     }
 
     public PaymentProcessor selectProcessor() {
@@ -27,7 +29,8 @@ public class RouterService {
             if (health.isAvailable()) {
 
                 if (health.getState() == ProcessorHealth.CircuitState.HALF_OPEN) return processor;
-                double score = health.getSuccessRate();
+                ProcessorMetrics metrics = redisService.getMetrics(processor);
+                double score = (metrics.getSuccessRate() * 0.6) + (1000.0 / (metrics.getAverageLatency() + 1) * 0.4);
                 if (score > bestScore) {
                     bestScore = score;
                     best = processor;
