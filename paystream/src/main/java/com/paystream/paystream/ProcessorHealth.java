@@ -1,8 +1,8 @@
 package com.paystream.paystream;
 
 import java.time.LocalDateTime;
-import java.util.LinkedList;
-import java.util.Queue;
+//import java.util.LinkedList;
+//import java.util.Queue;
 
 public class ProcessorHealth {
 
@@ -21,7 +21,7 @@ public class ProcessorHealth {
     private int consecutiveFailures;
     private int consecutiveSuccesses;
     private LocalDateTime openedAt;
-    private final Queue<Boolean> last100Results = new LinkedList<>();
+    //private final Queue<Boolean> last100Results = new LinkedList<>();
 
     public ProcessorHealth(PaymentProcessor processor) {
         this.processor = processor;
@@ -52,7 +52,7 @@ public class ProcessorHealth {
     public void recordFailure() {
         consecutiveFailures++;
         consecutiveSuccesses = 0;
-        addResult(false);
+        //addResult(false);
         if (state == CircuitState.HALF_OPEN) {
             // any failure in HALF_OPEN → immediately back to OPEN
             state = CircuitState.OPEN;
@@ -67,24 +67,24 @@ public class ProcessorHealth {
     public void recordSuccess() {
         consecutiveFailures = 0;
         consecutiveSuccesses++;
-        addResult(true);
+        //addResult(true);
         if (state == CircuitState.HALF_OPEN && consecutiveSuccesses >= SUCCESS_THRESHOLD) {
             state = CircuitState.CLOSED;
         }
     }
 
-    private void addResult(boolean success) {
-        if (last100Results.size() >= 100) {
-            last100Results.poll();
-        }
-        last100Results.offer(success);
-    }
-
-    public double getSuccessRate() {
-        if (last100Results.isEmpty()) return 100.0;
-        long successes = last100Results.stream()
-                .filter(r -> r)
-                .count();
-        return (successes * 100.0) / last100Results.size();
-    }
+//    private void addResult(boolean success) {
+//        if (last100Results.size() >= 100) {
+//            last100Results.poll();
+//        }
+//        last100Results.offer(success);
+//    }
+//
+//    public double getSuccessRate() {
+//        if (last100Results.isEmpty()) return 100.0;
+//        long successes = last100Results.stream()
+//                .filter(r -> r)
+//                .count();
+//        return (successes * 100.0) / last100Results.size();
+//    }
 }

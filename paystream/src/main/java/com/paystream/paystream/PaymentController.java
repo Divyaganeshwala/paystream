@@ -76,7 +76,7 @@ public class PaymentController {
                     .append(" | consecutiveFailures: ").append(health.getFailureCount())
                     .append(" | consecutiveSuccesses: ").append(health.getSuccessCount())
                     .append(" | successRate: ")
-                    .append(String.format("%.1f", health.getSuccessRate())).append("%")
+                    .append(String.format("%.1f", redisService.getMetrics(processor).getSuccessRate())).append("%")
                     .append("\n");
         }
         return sb.toString();
@@ -94,7 +94,7 @@ public class PaymentController {
                     + " | State: " + health.getState()
                     + " | consecutiveFailures: " + health.getFailureCount()
                     + " | successRate: "
-                    + String.format("%.1f", health.getSuccessRate()) + "%";
+                    + String.format("%.1f", redisService.getMetrics(processor).getSuccessRate()) + "%";
         } catch (IllegalArgumentException e) {
             return "Unknown processor: " + processorName;
         }
@@ -112,7 +112,7 @@ public class PaymentController {
                     + " | State: " + health.getState()
                     + " | consecutiveSuccesses: " + health.getSuccessCount()
                     + " | successRate: "
-                    + String.format("%.1f", health.getSuccessRate()) + "%";
+                    + String.format("%.1f", redisService.getMetrics(processor).getSuccessRate()) + "%";
         } catch (IllegalArgumentException e) {
             return "Unknown processor: " + processorName;
         }

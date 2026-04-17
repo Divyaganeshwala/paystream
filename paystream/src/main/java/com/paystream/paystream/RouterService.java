@@ -4,8 +4,8 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.paystream.paystream.ProcessorHealth.CircuitState.CLOSED;
-import static com.paystream.paystream.ProcessorHealth.CircuitState.HALF_OPEN;
+//import static com.paystream.paystream.ProcessorHealth.CircuitState.CLOSED;
+//import static com.paystream.paystream.ProcessorHealth.CircuitState.HALF_OPEN;
 
 @Service
 public class RouterService {
