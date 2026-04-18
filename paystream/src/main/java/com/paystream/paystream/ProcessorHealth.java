@@ -1,8 +1,7 @@
 package com.paystream.paystream;
 
 import java.time.LocalDateTime;
-//import java.util.LinkedList;
-//import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ProcessorHealth {
 
@@ -18,22 +17,32 @@ public class ProcessorHealth {
 
     private final PaymentProcessor processor;
     private CircuitState state;
-    private int consecutiveFailures;
-    private int consecutiveSuccesses;
+    private AtomicInteger consecutiveFailures = new AtomicInteger(0);
+    private AtomicInteger consecutiveSuccesses = new AtomicInteger(0);
     private LocalDateTime openedAt;
-    //private final Queue<Boolean> last100Results = new LinkedList<>();
 
     public ProcessorHealth(PaymentProcessor processor) {
         this.processor = processor;
         this.state = CircuitState.CLOSED;
-        this.consecutiveFailures = 0;
-        this.consecutiveSuccesses = 0;
+        this.consecutiveFailures.set(0);
+        this.consecutiveSuccesses.set(0);
     }
 
-    public PaymentProcessor getProcessor() { return processor; }
-    public CircuitState getState() { return state; }
-    public int getFailureCount() { return consecutiveFailures; }
-    public int getSuccessCount() { return consecutiveSuccesses; }
+    public PaymentProcessor getProcessor() {
+        return processor;
+    }
+
+    public CircuitState getState() {
+        return state;
+    }
+
+    public int getFailureCount() {
+        return consecutiveFailures.get();
+    }
+
+    public int getSuccessCount() {
+        return consecutiveSuccesses.get();
+    }
 
     public boolean isAvailable() {
         if (state == CircuitState.CLOSED) return true;
@@ -41,7 +50,7 @@ public class ProcessorHealth {
         if (state == CircuitState.OPEN) {
             if (LocalDateTime.now().isAfter(openedAt.plusSeconds(OPEN_TIMEOUT_SECONDS))) {
                 state = CircuitState.HALF_OPEN;
-                consecutiveSuccesses = 0;
+                consecutiveSuccesses.set(0);
                 return true;
             }
             return false;
@@ -50,14 +59,14 @@ public class ProcessorHealth {
     }
 
     public void recordFailure() {
-        consecutiveFailures++;
-        consecutiveSuccesses = 0;
+        consecutiveFailures.incrementAndGet();
+        consecutiveSuccesses.set(0);
         //addResult(false);
         if (state == CircuitState.HALF_OPEN) {
             // any failure in HALF_OPEN → immediately back to OPEN
             state = CircuitState.OPEN;
             openedAt = LocalDateTime.now();
-        } else if (consecutiveFailures >= FAILURE_THRESHOLD) {
+        } else if (consecutiveFailures.get() >= FAILURE_THRESHOLD) {
             // normal CLOSED → OPEN transition
             state = CircuitState.OPEN;
             openedAt = LocalDateTime.now();
@@ -65,26 +74,12 @@ public class ProcessorHealth {
     }
 
     public void recordSuccess() {
-        consecutiveFailures = 0;
-        consecutiveSuccesses++;
+        consecutiveFailures.set(0);
+        consecutiveSuccesses.incrementAndGet();
         //addResult(true);
-        if (state == CircuitState.HALF_OPEN && consecutiveSuccesses >= SUCCESS_THRESHOLD) {
+        if (state == CircuitState.HALF_OPEN && consecutiveSuccesses.get() >= SUCCESS_THRESHOLD) {
             state = CircuitState.CLOSED;
         }
     }
 
-//    private void addResult(boolean success) {
-//        if (last100Results.size() >= 100) {
-//            last100Results.poll();
-//        }
-//        last100Results.offer(success);
-//    }
-//
-//    public double getSuccessRate() {
-//        if (last100Results.isEmpty()) return 100.0;
-//        long successes = last100Results.stream()
-//                .filter(r -> r)
-//                .count();
-//        return (successes * 100.0) / last100Results.size();
-//    }
 }

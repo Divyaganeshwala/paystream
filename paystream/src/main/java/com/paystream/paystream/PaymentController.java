@@ -90,6 +90,7 @@ public class PaymentController {
             Payment payment = new Payment("0", "INR", processorName.toUpperCase(), "FAILED");
             paymentRepository.save(payment);
             ProcessorHealth health = routerService.getHealthMap().get(processor);
+            redisService.recordPaymentResult(processor, false, 0);
             return processorName + " failure recorded"
                     + " | State: " + health.getState()
                     + " | consecutiveFailures: " + health.getFailureCount()
@@ -108,6 +109,7 @@ public class PaymentController {
             Payment payment = new Payment("0", "INR", processorName.toUpperCase(), "RECOVERED");
             paymentRepository.save(payment);
             ProcessorHealth health = routerService.getHealthMap().get(processor);
+            redisService.recordPaymentResult(processor, true, 0);
             return processorName + " success recorded"
                     + " | State: " + health.getState()
                     + " | consecutiveSuccesses: " + health.getSuccessCount()
