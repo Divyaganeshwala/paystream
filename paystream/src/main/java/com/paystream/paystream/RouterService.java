@@ -4,11 +4,13 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
-//import static com.paystream.paystream.ProcessorHealth.CircuitState.CLOSED;
-//import static com.paystream.paystream.ProcessorHealth.CircuitState.HALF_OPEN;
-
 @Service
 public class RouterService {
+
+    public enum RoutingMode {
+        SMART,
+        SINGLE_PROCESSOR
+    }
 
     private final Map<PaymentProcessor, ProcessorHealth> healthMap = new HashMap<>();
     private final RedisService redisService;
@@ -20,7 +22,16 @@ public class RouterService {
         this.redisService= redisService;
     }
 
+    private RoutingMode currentMode = RoutingMode.SMART;
+    public void setRoutingMode(RoutingMode mode) {
+        this.currentMode = mode;
+    }
+
+    public RoutingMode getCurrentMode() { return currentMode; }
+
     public PaymentProcessor selectProcessor() {
+        if(currentMode.equals(RoutingMode.SINGLE_PROCESSOR)) return PaymentProcessor.RAZORPAY;
+
         PaymentProcessor best = null;
         double bestScore = -1;
 
