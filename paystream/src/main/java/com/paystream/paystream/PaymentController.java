@@ -12,12 +12,14 @@ public class PaymentController {
     private final PaymentRepository paymentRepository;
     private final RedisService redisService;
     private final PaymentService paymentService;
+    private final CircuitBreakerEventRepository circuitBreakerEventRepository;
 
-    public PaymentController(RouterService routerService, PaymentRepository paymentRepository, RedisService redisService, PaymentService paymentService) {
+    public PaymentController(RouterService routerService, PaymentRepository paymentRepository, RedisService redisService, PaymentService paymentService, CircuitBreakerEventRepository circuitBreakerEventRepository) {
         this.routerService = routerService;
         this.paymentRepository = paymentRepository;
         this.redisService= redisService;
         this.paymentService= paymentService;
+        this.circuitBreakerEventRepository =circuitBreakerEventRepository;
     }
 
     @PostMapping("/payment")
@@ -41,11 +43,18 @@ public class PaymentController {
                     .append(" → state: ").append(health.getState())
                     .append(" | consecutiveFailures: ").append(health.getFailureCount())
                     .append(" | consecutiveSuccesses: ").append(health.getSuccessCount())
+                    .append(" | avgLatency: ")
+                    .append(String.format("%.0f", redisService.getMetrics(processor).getAverageLatency())).append("ms")
                     .append(" | successRate: ")
                     .append(String.format("%.1f", redisService.getMetrics(processor).getSuccessRate())).append("%")
                     .append("\n");
         }
         return sb.toString();
+    }
+
+    @GetMapping("/events")
+    public List<CircuitBreakerEvent> getEvents() {
+        return circuitBreakerEventRepository.findAll();
     }
 
     @PostMapping("/simulate/failure/{processorName}")

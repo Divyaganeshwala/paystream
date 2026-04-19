@@ -14,12 +14,18 @@ public class RouterService {
 
     private final Map<PaymentProcessor, ProcessorHealth> healthMap = new HashMap<>();
     private final RedisService redisService;
+    private final CircuitBreakerEventRepository eventRepository;
 
-    public RouterService(RedisService redisService) {
+    public RouterService(RedisService redisService, CircuitBreakerEventRepository eventRepository) {
         for (PaymentProcessor processor : PaymentProcessor.values()) {
-            healthMap.put(processor, new ProcessorHealth(processor));
+            ProcessorHealth health = new ProcessorHealth(processor);
+            health.setOnStateChange(event ->
+                    eventRepository.save(new CircuitBreakerEvent(event[0], event[1], event[2]))
+            );
+            healthMap.put(processor, health);
         }
         this.redisService= redisService;
+        this.eventRepository= eventRepository;
     }
 
     private RoutingMode currentMode = RoutingMode.SMART;

@@ -2,6 +2,7 @@ package com.paystream.paystream;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public class ProcessorHealth {
 
@@ -49,7 +50,10 @@ public class ProcessorHealth {
         if (state == CircuitState.HALF_OPEN) return true;
         if (state == CircuitState.OPEN) {
             if (LocalDateTime.now().isAfter(openedAt.plusSeconds(OPEN_TIMEOUT_SECONDS))) {
+                CircuitState before = state;
                 state = CircuitState.HALF_OPEN;
+                notifyStateChange(before, state);
+
                 consecutiveSuccesses.set(0);
                 return true;
             }
@@ -58,7 +62,18 @@ public class ProcessorHealth {
         return false;
     }
 
+    private Consumer<String[]> onStateChange;
+    public void setOnStateChange(Consumer<String[]> callback) {
+        this.onStateChange = callback;
+    }
+
+    private void notifyStateChange(CircuitState from, CircuitState to) {
+        if (onStateChange != null && from != to) {
+            onStateChange.accept(new String[]{processor.name(), from.name(), to.name()});
+        }
+    }
     public void recordFailure() {
+        CircuitState before = state;
         consecutiveFailures.incrementAndGet();
         consecutiveSuccesses.set(0);
         //addResult(false);
@@ -71,15 +86,18 @@ public class ProcessorHealth {
             state = CircuitState.OPEN;
             openedAt = LocalDateTime.now();
         }
+        notifyStateChange(before, state);
     }
 
     public void recordSuccess() {
+        CircuitState before = state;
         consecutiveFailures.set(0);
         consecutiveSuccesses.incrementAndGet();
         //addResult(true);
         if (state == CircuitState.HALF_OPEN && consecutiveSuccesses.get() >= SUCCESS_THRESHOLD) {
             state = CircuitState.CLOSED;
         }
+        notifyStateChange(before, state);
     }
 
 }
