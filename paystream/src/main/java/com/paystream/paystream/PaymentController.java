@@ -57,7 +57,7 @@ public class PaymentController {
                     .append(" | successRate: ")
                     .append(String.format("%.1f", metrics.getSuccessRate())).append("%")
                     .append(" | score: ").append(score)
-                    .append(" | totalHandled: ").append(paymentRepository.countByProcessor(processor.name()))
+                    .append(" | totalHandled: ").append(paymentRepository.countByProcessorAndAmountNot(processor.name(), "0"))
                     .append("\n");
         }
         return sb.toString();
@@ -70,9 +70,9 @@ public class PaymentController {
 
     @GetMapping("/stats")
     public Map<String, Object> getStats() {
-        long total = paymentRepository.count();
-        long success = paymentRepository.countByStatus("SUCCESS");
-        long failed = paymentRepository.countByStatus("FAILED");
+        long total = paymentRepository.countByAmountNot("0");
+        long success = paymentRepository.countByStatusAndAmountNot("SUCCESS", "0");
+        long failed = paymentRepository.countByStatusAndAmountNot("FAILED", "0");
         double rate = total == 0 ? 0 : (success * 100.0) / total;
 
         Map<String, Object> stats = new HashMap<>();
@@ -100,25 +100,6 @@ public class PaymentController {
             return processorName + " failure recorded"
                     + " | State: " + health.getState()
                     + " | consecutiveFailures: " + health.getFailureCount()
-                    + " | successRate: "
-                    + String.format("%.1f", redisService.getMetrics(processor).getSuccessRate()) + "%";
-        } catch (IllegalArgumentException e) {
-            return "Unknown processor: " + processorName;
-        }
-    }
-
-    @PostMapping("/simulate/success/{processorName}")
-    public String simulateSuccess(@PathVariable String processorName) {
-        try {
-            PaymentProcessor processor = PaymentProcessor.valueOf(processorName.toUpperCase());
-            routerService.recordSuccess(processor);
-            Payment payment = new Payment("0", "INR", processorName.toUpperCase(), "RECOVERED");
-            paymentRepository.save(payment);
-            ProcessorHealth health = routerService.getHealthMap().get(processor);
-            redisService.recordPaymentResult(processor, true, 0);
-            return processorName + " success recorded"
-                    + " | State: " + health.getState()
-                    + " | consecutiveSuccesses: " + health.getSuccessCount()
                     + " | successRate: "
                     + String.format("%.1f", redisService.getMetrics(processor).getSuccessRate()) + "%";
         } catch (IllegalArgumentException e) {
