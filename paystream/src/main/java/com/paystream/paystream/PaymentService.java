@@ -2,6 +2,7 @@ package com.paystream.paystream;
 
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -11,23 +12,30 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final RazorpayProcessor razorpayProcessor;
     private final RedisService redisService;
+    private final RoutingLogRepository routingLogRepository;
     private final Random random = new Random();
 
     public PaymentService(RouterService routerService,
                           PaymentRepository paymentRepository,
                           RazorpayProcessor razorpayProcessor,
-                          RedisService redisService) {
+                          RedisService redisService,
+                          RoutingLogRepository routingLogRepository) {
         this.routerService = routerService;
         this.paymentRepository = paymentRepository;
         this.razorpayProcessor = razorpayProcessor;
         this.redisService = redisService;
+        this.routingLogRepository= routingLogRepository;
     }
 
     public String processPayment(PaymentRequest request) throws InterruptedException {
         PaymentProcessor processor = routerService.selectProcessor();
+
         if (processor == null) {
             return "All processors are down. Payment failed.";
         }
+
+        // Capture scores NOW before anything changes
+        Map<String, Double> scoreSnapshot = routerService.getScoreSnapshot();
 
         long start = System.currentTimeMillis();
         boolean success;
@@ -48,10 +56,20 @@ public class PaymentService {
             else routerService.recordFailure(processor);
         }
 
-        paymentRepository.save(new Payment(
-                request.getAmount(), request.getCurrency(), processor.name(), status
-        ));
+        Payment payment= new Payment(request.getAmount(), request.getCurrency(), processor.name(), status);
+        Payment savedPayment = paymentRepository.save(payment);
 
+        for (PaymentProcessor p : PaymentProcessor.values()) {
+            ProcessorHealth health = routerService.getHealthMap().get(p);
+            boolean selected = p == processor;
+            routingLogRepository.save(new RoutingLog(
+                    savedPayment.getId(),
+                    p.name(),
+                    scoreSnapshot.get(p.name()),
+                    health.getState().name(),
+                    selected
+            ));
+        }
         return "Payment " + status + " on: " + processor.name()
                 + " | Amount: " + request.getAmount();
     }

@@ -1,0 +1,11 @@
+package com.paystream.paystream;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface RoutingLogRepository extends JpaRepository<RoutingLog, Long> {
+    List<RoutingLog> findByPaymentId(Long paymentId);
+}

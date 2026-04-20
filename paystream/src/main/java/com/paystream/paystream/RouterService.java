@@ -35,6 +35,18 @@ public class RouterService {
 
     public RoutingMode getCurrentMode() { return currentMode; }
 
+    public Map<String, Double> getScoreSnapshot() {
+        Map<String, Double> snapshot = new HashMap<>();
+        for (PaymentProcessor processor : PaymentProcessor.values()) {
+            ProcessorMetrics metrics = redisService.getMetrics(processor);
+            double latency = metrics.getAverageLatency();
+            double score = latency == 0 ? metrics.getSuccessRate() :
+                    (metrics.getSuccessRate() * 0.6) + (1000.0 / (latency + 1) * 0.4);
+            snapshot.put(processor.name(), score);
+        }
+        return snapshot;
+    }
+
     public PaymentProcessor selectProcessor() {
         if(currentMode.equals(RoutingMode.SINGLE_PROCESSOR)) return PaymentProcessor.RAZORPAY;
 

@@ -16,13 +16,15 @@ public class PaymentController {
     private final RedisService redisService;
     private final PaymentService paymentService;
     private final CircuitBreakerEventRepository circuitBreakerEventRepository;
+    private final RoutingLogRepository routingLogRepository;
 
-    public PaymentController(RouterService routerService, PaymentRepository paymentRepository, RedisService redisService, PaymentService paymentService, CircuitBreakerEventRepository circuitBreakerEventRepository) {
+    public PaymentController(RouterService routerService, PaymentRepository paymentRepository, RedisService redisService, PaymentService paymentService, CircuitBreakerEventRepository circuitBreakerEventRepository, RoutingLogRepository routingLogRepository) {
         this.routerService = routerService;
         this.paymentRepository = paymentRepository;
         this.redisService= redisService;
         this.paymentService= paymentService;
         this.circuitBreakerEventRepository =circuitBreakerEventRepository;
+        this.routingLogRepository= routingLogRepository;
     }
 
     @PostMapping("/payment")
@@ -79,6 +81,11 @@ public class PaymentController {
         stats.put("failed", failed);
         stats.put("successRate", Math.round(rate * 10.0) / 10.0);
         return stats;
+    }
+
+    @GetMapping("/payments/{id}/routing")
+    public List<RoutingLog> getRoutingLog(@PathVariable Long id) {
+        return routingLogRepository.findByPaymentId(id);
     }
 
     @PostMapping("/simulate/failure/{processorName}")
