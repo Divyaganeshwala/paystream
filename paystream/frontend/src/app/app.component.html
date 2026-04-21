@@ -1,77 +1,159 @@
 <div class="dashboard">
+
   <header class="header">
-    <h1>PayStream</h1>
-    <span class="subtitle">Payment Orchestration Engine</span>
-    <span class="mode-badge">Mode: {{ currentMode }}</span>
+    <div class="brand">
+      <h1>PayStream</h1>
+      <span class="tagline">Payment Orchestration Engine</span>
+    </div>
+    <div class="system-status" [ngClass]="'status-' + systemStatus.toLowerCase()">
+      <span class="status-dot"></span>
+      {{ systemStatus }}
+    </div>
   </header>
 
   <div class="stats-bar">
-    <div class="stat">
-      <span class="stat-label">Total Payments</span>
-      <span class="stat-value">{{ stats.total }}</span>
+    <div class="stat-card">
+      <div class="stat-label">Total Payments</div>
+      <div class="stat-value">{{ stats.total }}</div>
     </div>
-    <div class="stat">
-      <span class="stat-label">Successful</span>
-      <span class="stat-value success">{{ stats.success }}</span>
+    <div class="stat-card">
+      <div class="stat-label">Successful</div>
+      <div class="stat-value green">{{ stats.success }}</div>
     </div>
-    <div class="stat">
-      <span class="stat-label">Failed</span>
-      <span class="stat-value failed">{{ stats.failed }}</span>
+    <div class="stat-card">
+      <div class="stat-label">Failed</div>
+      <div class="stat-value red">{{ stats.failed }}</div>
     </div>
-    <div class="stat">
-      <span class="stat-label">Success Rate</span>
-      <span class="stat-value">{{ stats.successRate }}%</span>
+    <div class="stat-card">
+      <div class="stat-label">Success Rate</div>
+      <div class="stat-value">{{ stats.successRate }}%</div>
     </div>
   </div>
 
+  <div class="section-title">Processor Health & Routing Scores</div>
   <div class="processor-grid">
-    <div class="processor-card" *ngFor="let p of processors"
-         [ngClass]="getStateClass(p.state)">
-      <div class="processor-name">{{ p.name }}</div>
-      <div class="state-badge">{{ p.state }}</div>
-      <div class="metric">
-        <span class="label">Success Rate</span>
-        <span class="value">{{ p.successRate }}%</span>
+    <div class="processor-card" *ngFor="let p of processors" [ngClass]="getStateClass(p.state)">
+      <div class="card-header">
+        <span class="processor-name">{{ p.name }}</span>
+        <span class="state-badge">{{ p.state }}</span>
       </div>
-      <div class="metric">
-        <span class="label">Avg Latency</span>
-        <span class="value">{{ p.avgLatency }}ms</span>
-      </div>
-      <div class="metric">
-        <span class="label">Consecutive Failures</span>
-        <span class="value">{{ p.consecutiveFailures }}</span>
-      </div>
-      <div class="metric">
-        <span class="label">Total Handled</span>
-        <span class="value">{{ p.totalHandled }}</span>
-      </div>
-      <div class="card-actions">
-        <button mat-stroked-button color="warn"
-                (click)="simulateFailure(p.name)">
-          Simulate Failure
-        </button>
-      </div>
-    </div>
-  </div>
 
-  <div class="controls">
-    <button mat-raised-button color="primary" (click)="sendPayment()">
-      Send Payment
-    </button>
-    <button mat-stroked-button (click)="toggleMode()">
-      Switch to {{ currentMode === 'SMART' ? 'SINGLE_PROCESSOR' : 'SMART' }}
-    </button>
-    <div class="load-test-control">
-      <input type="number" [(ngModel)]="loadTestCount" min="1" max="200" />
-      <button mat-stroked-button (click)="runLoadTest()">
-        Run Load Test
+      <div class="score-section">
+        <div class="score-label">Routing Score</div>
+        <div class="score-value">{{ p.score | number:'1.1-1' }}</div>
+        <div class="score-bar-track">
+          <div class="score-bar-fill" [style.width.%]="(p.score / getMaxScore()) * 100"></div>
+        </div>
+        <div class="score-hint" *ngIf="p.state === 'CLOSED'">
+          Higher score = more traffic routed here
+        </div>
+        <div class="score-hint open" *ngIf="p.state === 'OPEN'">
+          Circuit open — no traffic until recovery
+        </div>
+        <div class="score-hint half" *ngIf="p.state === 'HALF_OPEN'">
+          Receiving probe payments to test recovery
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric-row">
+          <span class="metric-label">Success Rate</span>
+          <span class="metric-value">{{ p.successRate }}%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Avg Latency</span>
+          <span class="metric-value">{{ p.avgLatency | number:'1.0-0' }}ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Total Handled</span>
+          <span class="metric-value">{{ p.totalHandled }}</span>
+        </div>
+        <div class="metric-row" *ngIf="p.consecutiveFailures > 0">
+          <span class="metric-label">Consecutive Failures</span>
+          <span class="metric-value red">{{ p.consecutiveFailures }}</span>
+        </div>
+        <div class="metric-row" *ngIf="p.state === 'HALF_OPEN'">
+          <span class="metric-label">Consecutive Successes</span>
+          <span class="metric-value green">{{ p.consecutiveSuccesses }} / 3</span>
+        </div>
+      </div>
+
+      <button class="simulate-btn" (click)="simulateFailure(p.name)">
+        Simulate Failure
       </button>
     </div>
   </div>
 
-  <div class="two-col">
+  <div class="routing-panel" *ngIf="lastRouting">
+    <div class="section-title">Last Routing Decision</div>
+    <div class="routing-payment-info">
+      Payment #{{ lastRouting.payment.id }} —
+      ₹{{ lastRouting.payment.amount }} —
+      {{ lastRouting.payment.processor }} —
+      <span [ngClass]="lastRouting.payment.status === 'SUCCESS' ? 'green' : 'red'">
+        {{ lastRouting.payment.status }}
+      </span>
+    </div>
+    <div class="routing-decisions">
+      <div class="routing-row" *ngFor="let d of lastRouting.decisions"
+           [ngClass]="d.wasSelected ? 'selected-row' : ''">
+        <span class="routing-processor">{{ d.processorName }}</span>
+        <span class="routing-score">score: {{ d.score | number:'1.1-1' }}</span>
+        <div class="routing-bar-track">
+          <div class="routing-bar-fill" [style.width.%]="(d.score / 500) * 100"
+               [ngClass]="d.wasSelected ? 'selected-bar' : ''"></div>
+        </div>
+        <span class="routing-state">{{ d.state }}</span>
+        <span class="routing-selected" *ngIf="d.wasSelected">SELECTED ✓</span>
+        <span class="routing-skipped" *ngIf="!d.wasSelected && d.state === 'OPEN'">SKIPPED — circuit open</span>
+        <span class="routing-skipped" *ngIf="!d.wasSelected && d.state !== 'OPEN'">available</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-section">
+    <div class="section-title">Controls</div>
+    <div class="controls">
+      <button class="btn-primary" (click)="sendPayment()">
+        Send Payment
+      </button>
+      <div class="test-group">
+        <input type="number" [(ngModel)]="loadTestCount" min="1" max="200" class="count-input"/>
+        <button class="btn-secondary" (click)="runSmartTest()" [disabled]="loadTestRunning">
+          {{ loadTestRunning ? 'Running...' : 'Run Smart Test' }}
+        </button>
+        <button class="btn-outline" (click)="runSingleTest()" [disabled]="loadTestRunning">
+          Run Single Processor Test
+        </button>
+      </div>
+      <button class="btn-ghost" (click)="flushRedis()">
+        Reset Scores
+      </button>
+    </div>
+
+    <div class="comparison-panel" *ngIf="comparisonResult">
+      <div class="comparison-title">Test Comparison</div>
+      <div class="comparison-grid">
+        <div class="comparison-card smart" *ngIf="comparisonResult.smart">
+          <div class="comp-label">Smart Routing</div>
+          <div class="comp-rate">{{ comparisonResult.smart.rate }}%</div>
+          <div class="comp-detail">{{ comparisonResult.smart.success }} / {{ comparisonResult.smart.total }} succeeded</div>
+        </div>
+        <div class="comparison-vs" *ngIf="comparisonResult.smart && comparisonResult.single">
+          <div class="improvement">{{ getImprovementText() }}</div>
+        </div>
+        <div class="comparison-card single" *ngIf="comparisonResult.single">
+          <div class="comp-label">Single Processor</div>
+          <div class="comp-rate">{{ comparisonResult.single.rate }}%</div>
+          <div class="comp-detail">{{ comparisonResult.single.success }} / {{ comparisonResult.single.total }} succeeded</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
     <div class="panel">
-      <h2>Payment History</h2>
+      <div class="section-title">Payment History</div>
       <div class="table-wrap">
         <table>
           <thead>
@@ -80,7 +162,6 @@
               <th>Processor</th>
               <th>Amount</th>
               <th>Status</th>
-              <th>Type</th>
             </tr>
           </thead>
           <tbody>
@@ -89,8 +170,7 @@
               <td>{{ p.createdAt | date:'HH:mm:ss' }}</td>
               <td>{{ p.processor }}</td>
               <td>₹{{ p.amount }}</td>
-              <td>{{ p.status }}</td>
-              <td>{{ p.amount === '0' ? 'SIMULATE' : 'REAL' }}</td>
+              <td class="status-cell">{{ p.status }}</td>
             </tr>
           </tbody>
         </table>
@@ -98,27 +178,30 @@
     </div>
 
     <div class="panel">
-      <h2>Circuit Breaker Events</h2>
+      <div class="section-title">Circuit Breaker Events</div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Time</th>
               <th>Processor</th>
-              <th>From</th>
-              <th>To</th>
+              <th>Transition</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let e of events">
               <td>{{ e.timeStamp | date:'HH:mm:ss' }}</td>
               <td>{{ e.processorName }}</td>
-              <td>{{ e.fromState }}</td>
-              <td>{{ e.toState }}</td>
+              <td>
+                <span class="transition">
+                  {{ e.fromState }} → {{ e.toState }}
+                </span>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
+
 </div>

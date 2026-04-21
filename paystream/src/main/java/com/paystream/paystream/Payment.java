@@ -17,7 +17,6 @@ public class Payment {
     private String status;
     private LocalDateTime createdAt;
 
-
     public Payment() {}
 
     public Payment(String amount, String currency, String processor, String status) {

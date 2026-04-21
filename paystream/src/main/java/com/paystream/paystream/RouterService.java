@@ -7,11 +7,6 @@ import java.util.Map;
 @Service
 public class RouterService {
 
-    public enum RoutingMode {
-        SMART,
-        SINGLE_PROCESSOR
-    }
-
     private final Map<PaymentProcessor, ProcessorHealth> healthMap = new HashMap<>();
     private final RedisService redisService;
     private final CircuitBreakerEventRepository eventRepository;
@@ -24,46 +19,38 @@ public class RouterService {
             );
             healthMap.put(processor, health);
         }
-        this.redisService= redisService;
-        this.eventRepository= eventRepository;
+        this.redisService = redisService;
+        this.eventRepository = eventRepository;
     }
 
-    private RoutingMode currentMode = RoutingMode.SMART;
-    public void setRoutingMode(RoutingMode mode) {
-        this.currentMode = mode;
-    }
+    public Map<PaymentProcessor, ProcessorHealth> getHealthMap() { return healthMap; }
 
-    public RoutingMode getCurrentMode() { return currentMode; }
+    private double calculateScore(ProcessorMetrics metrics) {
+        double latency = metrics.getAverageLatency();
+        if (latency == 0) return metrics.getSuccessRate();
+        return (metrics.getSuccessRate() * 0.6) + (1000.0 / (latency + 1) * 0.4);
+    }
 
     public Map<String, Double> getScoreSnapshot() {
         Map<String, Double> snapshot = new HashMap<>();
         for (PaymentProcessor processor : PaymentProcessor.values()) {
-            ProcessorMetrics metrics = redisService.getMetrics(processor);
-            double latency = metrics.getAverageLatency();
-            double score = latency == 0 ? metrics.getSuccessRate() :
-                    (metrics.getSuccessRate() * 0.6) + (1000.0 / (latency + 1) * 0.4);
-            snapshot.put(processor.name(), score);
+            snapshot.put(processor.name(), calculateScore(redisService.getMetrics(processor)));
         }
         return snapshot;
     }
 
     public PaymentProcessor selectProcessor() {
-        if(currentMode.equals(RoutingMode.SINGLE_PROCESSOR)) return PaymentProcessor.RAZORPAY;
-
         PaymentProcessor best = null;
         double bestScore = -1;
 
         for (PaymentProcessor processor : PaymentProcessor.values()) {
             ProcessorHealth health = healthMap.get(processor);
-            if (health.isAvailable()) {
-
-                if (health.getState() == ProcessorHealth.CircuitState.HALF_OPEN) return processor;
-                ProcessorMetrics metrics = redisService.getMetrics(processor);
-                double score = (metrics.getSuccessRate() * 0.6) + (1000.0 / (metrics.getAverageLatency() + 1) * 0.4);
-                if (score > bestScore) {
-                    bestScore = score;
-                    best = processor;
-                }
+            if (!health.isAvailable()) continue;
+            if (health.getState() == ProcessorHealth.CircuitState.HALF_OPEN) return processor;
+            double score = calculateScore(redisService.getMetrics(processor));
+            if (score > bestScore) {
+                bestScore = score;
+                best = processor;
             }
         }
         return best;
@@ -75,9 +62,5 @@ public class RouterService {
 
     public void recordFailure(PaymentProcessor processor) {
         healthMap.get(processor).recordFailure();
-    }
-
-    public Map<PaymentProcessor, ProcessorHealth> getHealthMap() {
-        return healthMap;
     }
 }

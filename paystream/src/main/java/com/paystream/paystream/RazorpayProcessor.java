@@ -6,6 +6,8 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class RazorpayProcessor {
 
@@ -14,6 +16,9 @@ public class RazorpayProcessor {
 
     @Value("${razorpay.key.secret}")
     private String keySecret;
+
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(RazorpayProcessor.class);
 
     public boolean processPayment(String amount, String currency) {
         try {
@@ -25,11 +30,11 @@ public class RazorpayProcessor {
             orderRequest.put("receipt", "receipt_" + System.currentTimeMillis());
 
             Order order = client.orders.create(orderRequest);
-            System.out.println("Razorpay order created: " + order.get("id"));
+            log.info("Razorpay order created: {}", Optional.ofNullable(order.get("id")));
             return true;
 
         } catch (Exception e) {
-            System.out.println("Razorpay failed: " + e.getMessage());
+            log.error("Razorpay payment failed: {}", e.getMessage());
             return false;
         }
     }

@@ -1,7 +1,6 @@
 package com.paystream.paystream;
 
 import org.springframework.stereotype.Service;
-
 import java.util.Map;
 import java.util.Random;
 
@@ -24,17 +23,13 @@ public class PaymentService {
         this.paymentRepository = paymentRepository;
         this.razorpayProcessor = razorpayProcessor;
         this.redisService = redisService;
-        this.routingLogRepository= routingLogRepository;
+        this.routingLogRepository = routingLogRepository;
     }
 
     public String processPayment(PaymentRequest request) throws InterruptedException {
         PaymentProcessor processor = routerService.selectProcessor();
+        if (processor == null) return "All processors are down. Payment failed.";
 
-        if (processor == null) {
-            return "All processors are down. Payment failed.";
-        }
-
-        // Capture scores NOW before anything changes
         Map<String, Double> scoreSnapshot = routerService.getScoreSnapshot();
 
         long start = System.currentTimeMillis();
@@ -47,30 +42,34 @@ public class PaymentService {
         }
         long latencyMs = System.currentTimeMillis() - start;
 
-        String status = success ? "SUCCESS" : "FAILED";
+        redisService.recordPaymentResult(processor, success, latencyMs);
+        if (success) routerService.recordSuccess(processor);
+        else routerService.recordFailure(processor);
 
-        // Only update circuit breaker and Redis in SMART mode
-        if (routerService.getCurrentMode() == RouterService.RoutingMode.SMART) {
-            redisService.recordPaymentResult(processor, success, latencyMs);
-            if (success) routerService.recordSuccess(processor);
-            else routerService.recordFailure(processor);
-        }
-
-        Payment payment= new Payment(request.getAmount(), request.getCurrency(), processor.name(), status);
-        Payment savedPayment = paymentRepository.save(payment);
+        Payment savedPayment = paymentRepository.save(
+                new Payment(request.getAmount(), request.getCurrency(),
+                        processor.name(), success ? "SUCCESS" : "FAILED")
+        );
 
         for (PaymentProcessor p : PaymentProcessor.values()) {
             ProcessorHealth health = routerService.getHealthMap().get(p);
-            boolean selected = p == processor;
             routingLogRepository.save(new RoutingLog(
-                    savedPayment.getId(),
-                    p.name(),
+                    savedPayment.getId(), p.name(),
                     scoreSnapshot.get(p.name()),
                     health.getState().name(),
-                    selected
+                    p == processor
             ));
         }
-        return "Payment " + status + " on: " + processor.name()
+
+        return "Payment " + (success ? "SUCCESS" : "FAILED") + " on: " + processor.name()
                 + " | Amount: " + request.getAmount();
+    }
+
+    public String processSingleProcessorPayment(PaymentRequest request) throws InterruptedException {
+        long start = System.currentTimeMillis();
+        boolean success = razorpayProcessor.processPayment(request.getAmount(), request.getCurrency());
+        long latencyMs = System.currentTimeMillis() - start;
+        return "Payment " + (success ? "SUCCESS" : "FAILED") +
+                " on: RAZORPAY | Latency: " + latencyMs + "ms";
     }
 }
