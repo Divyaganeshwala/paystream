@@ -16,11 +16,11 @@ public class CashfreeProcessor {
 
     private static final Logger log = LoggerFactory.getLogger(CashfreeProcessor.class);
 
-    @Value("${cashfree.partner.apikey}")
-    private String partnerApiKey;
+    @Value("${cashfree.client.id}")
+    private String clientId;
 
-    @Value("${cashfree.partner.merchantid}")
-    private String partnerMerchantId;
+    @Value("${cashfree.client.secret}")
+    private String clientSecret;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private static final String SANDBOX_URL = "https://sandbox.cashfree.com/pg/orders";
@@ -29,8 +29,8 @@ public class CashfreeProcessor {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("x-partner-apikey", partnerApiKey);
-            headers.set("x-partner-merchantid", partnerMerchantId);
+            headers.set("x-client-id", clientId);
+            headers.set("x-client-secret", clientSecret);
             headers.set("x-api-version", "2022-09-01");
             headers.set("Accept", "application/json");
 
