@@ -2,7 +2,6 @@ package com.paystream.paystream;
 
 import org.springframework.stereotype.Service;
 import java.util.Map;
-import java.util.Random;
 
 @Service
 public class PaymentService {
@@ -14,7 +13,6 @@ public class PaymentService {
     private final CashfreeProcessor cashfreeProcessor;
     private final RedisService redisService;
     private final RoutingLogRepository routingLogRepository;
-    private final Random random = new Random();
 
     public PaymentService(RouterService routerService,
                           PaymentRepository paymentRepository,
@@ -26,11 +24,10 @@ public class PaymentService {
         this.routerService = routerService;
         this.paymentRepository = paymentRepository;
         this.razorpayProcessor = razorpayProcessor;
+        this.payPalProcessor = payPalProcessor;
+        this.cashfreeProcessor = cashfreeProcessor;
         this.redisService = redisService;
         this.routingLogRepository = routingLogRepository;
-        this.payPalProcessor= payPalProcessor;
-        this.cashfreeProcessor= cashfreeProcessor;
-
     }
 
     public String processPayment(PaymentRequest request) throws InterruptedException {
@@ -45,11 +42,8 @@ public class PaymentService {
             success = razorpayProcessor.processPayment(request.getAmount(), request.getCurrency());
         } else if (processor == PaymentProcessor.PAYPAL) {
             success = payPalProcessor.processPayment(request.getAmount(), request.getCurrency());
-        } else if (processor == PaymentProcessor.CASHFREE) {
-            success = cashfreeProcessor.processPayment(request.getAmount(), request.getCurrency());
         } else {
-            Thread.sleep(150 + random.nextInt(200));
-            success = random.nextInt(10) != 0;
+            success = cashfreeProcessor.processPayment(request.getAmount(), request.getCurrency());
         }
         long latencyMs = System.currentTimeMillis() - start;
 
@@ -74,13 +68,5 @@ public class PaymentService {
 
         return "Payment " + (success ? "SUCCESS" : "FAILED") + " on: " + processor.name()
                 + " | Amount: " + request.getAmount();
-    }
-
-    public String processSingleProcessorPayment(PaymentRequest request) throws InterruptedException {
-        long start = System.currentTimeMillis();
-        boolean success = razorpayProcessor.processPayment(request.getAmount(), request.getCurrency());
-        long latencyMs = System.currentTimeMillis() - start;
-        return "Payment " + (success ? "SUCCESS" : "FAILED") +
-                " on: RAZORPAY | Latency: " + latencyMs + "ms";
     }
 }

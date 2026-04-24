@@ -13,12 +13,7 @@ public class LoadTestController {
     }
 
     @GetMapping("/smart")
-    public String runSmartTest(@RequestParam int payments) throws InterruptedException {
-        return loadTestService.runSmartTest(payments);
-    }
-
-    @GetMapping("/single")
-    public String runSingleProcessorTest(@RequestParam int payments) throws InterruptedException {
-        return loadTestService.runSingleProcessorTest(payments);
+    public String runLoadTest(@RequestParam int payments) throws InterruptedException {
+        return loadTestService.runTest(payments);
     }
 }
