@@ -17,7 +17,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   processors: any[] = [
     { name: 'RAZORPAY', state: 'CLOSED', successRate: 100, avgLatency: 0, consecutiveFailures: 0, consecutiveSuccesses: 0, totalHandled: 0, score: 100 },
-    { name: 'PAYU', state: 'CLOSED', successRate: 100, avgLatency: 0, consecutiveFailures: 0, consecutiveSuccesses: 0, totalHandled: 0, score: 100 },
+    { name: 'PAYPAL', state: 'CLOSED', successRate: 100, avgLatency: 0, consecutiveFailures: 0, consecutiveSuccesses: 0, totalHandled: 0, score: 100 },
     { name: 'CASHFREE', state: 'CLOSED', successRate: 100, avgLatency: 0, consecutiveFailures: 0, consecutiveSuccesses: 0, totalHandled: 0, score: 100 }
   ];
 

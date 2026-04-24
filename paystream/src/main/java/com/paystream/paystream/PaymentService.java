@@ -43,7 +43,7 @@ public class PaymentService {
         boolean success;
         if (processor == PaymentProcessor.RAZORPAY) {
             success = razorpayProcessor.processPayment(request.getAmount(), request.getCurrency());
-        } else if (processor == PaymentProcessor.PAYU) {
+        } else if (processor == PaymentProcessor.PAYPAL) {
             success = payPalProcessor.processPayment(request.getAmount(), request.getCurrency());
         } else if (processor == PaymentProcessor.CASHFREE) {
             success = cashfreeProcessor.processPayment(request.getAmount(), request.getCurrency());
