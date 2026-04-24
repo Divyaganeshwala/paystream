@@ -25,7 +25,7 @@ public class RouterService {
 
     public Map<PaymentProcessor, ProcessorHealth> getHealthMap() { return healthMap; }
 
-    private double calculateScore(ProcessorMetrics metrics) {
+    public double calculateScore(ProcessorMetrics metrics) {
         double latency = metrics.getAverageLatency();
         if (latency == 0) return metrics.getSuccessRate();
         return (metrics.getSuccessRate() * 0.6) + (1000.0 / (latency + 1) * 0.4);

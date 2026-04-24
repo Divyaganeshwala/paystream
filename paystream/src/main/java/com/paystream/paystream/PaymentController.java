@@ -52,8 +52,7 @@ public class PaymentController {
             ProcessorHealth health = routerService.getHealthMap().get(processor);
             health.isAvailable();
             ProcessorMetrics metrics = redisService.getMetrics(processor);
-            double score = (metrics.getSuccessRate() * 0.6) +
-                    (1000.0 / (metrics.getAverageLatency() + 1) * 0.4);
+            double score = routerService.calculateScore(metrics);
             sb.append(processor.name())
                     .append(" → state: ").append(health.getState())
                     .append(" | consecutiveFailures: ").append(health.getFailureCount())
