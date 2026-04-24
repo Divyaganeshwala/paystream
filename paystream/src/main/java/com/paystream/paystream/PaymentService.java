@@ -10,6 +10,8 @@ public class PaymentService {
     private final RouterService routerService;
     private final PaymentRepository paymentRepository;
     private final RazorpayProcessor razorpayProcessor;
+    private final PayPalProcessor payPalProcessor;
+    private final CashfreeProcessor cashfreeProcessor;
     private final RedisService redisService;
     private final RoutingLogRepository routingLogRepository;
     private final Random random = new Random();
@@ -17,6 +19,8 @@ public class PaymentService {
     public PaymentService(RouterService routerService,
                           PaymentRepository paymentRepository,
                           RazorpayProcessor razorpayProcessor,
+                          PayPalProcessor payPalProcessor,
+                          CashfreeProcessor cashfreeProcessor,
                           RedisService redisService,
                           RoutingLogRepository routingLogRepository) {
         this.routerService = routerService;
@@ -24,6 +28,9 @@ public class PaymentService {
         this.razorpayProcessor = razorpayProcessor;
         this.redisService = redisService;
         this.routingLogRepository = routingLogRepository;
+        this.payPalProcessor= payPalProcessor;
+        this.cashfreeProcessor= cashfreeProcessor;
+
     }
 
     public String processPayment(PaymentRequest request) throws InterruptedException {
@@ -36,6 +43,10 @@ public class PaymentService {
         boolean success;
         if (processor == PaymentProcessor.RAZORPAY) {
             success = razorpayProcessor.processPayment(request.getAmount(), request.getCurrency());
+        } else if (processor == PaymentProcessor.PAYU) {
+            success = payPalProcessor.processPayment(request.getAmount(), request.getCurrency());
+        } else if (processor == PaymentProcessor.CASHFREE) {
+            success = cashfreeProcessor.processPayment(request.getAmount(), request.getCurrency());
         } else {
             Thread.sleep(150 + random.nextInt(200));
             success = random.nextInt(10) != 0;
