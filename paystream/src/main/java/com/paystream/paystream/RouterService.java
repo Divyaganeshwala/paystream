@@ -27,8 +27,8 @@ public class RouterService {
 
     public double calculateScore(ProcessorMetrics metrics) {
         double latency = metrics.getAverageLatency();
-        if (latency == 0) return metrics.getSuccessRate();
-        return (metrics.getSuccessRate() * 0.6) + (1000.0 / (latency + 1) * 0.4);
+        double latencyScore = 100.0 * (1.0 - latency / (latency + 1000.0));
+        return (metrics.getSuccessRate() * 0.6) + (latencyScore * 0.4);
     }
 
     public Map<String, Double> getScoreSnapshot() {
