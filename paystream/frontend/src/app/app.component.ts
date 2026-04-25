@@ -1,8 +1,5 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { MatButtonModule } from '@angular/material/button';
 
 @Component({
   selector: 'app-root',
@@ -26,8 +23,8 @@ export class AppComponent implements OnInit, OnDestroy {
   events: any[] = [];
   lastRouting: any = null;
   loadTestCount: number = 50;
-  comparisonResult: any = null;
   loadTestRunning: boolean = false;
+  loadTestResult: string = '';
   systemStatus: string = 'HEALTHY';
 
   constructor(private http: HttpClient) {}
@@ -120,11 +117,6 @@ export class AppComponent implements OnInit, OnDestroy {
       { amount: '500', currency: 'INR' },
       { responseType: 'text' }
     ).subscribe(response => {
-      const latestPayment = {
-        processor: response.split('on: ')[1]?.split(' |')[0] || '',
-        status: response.includes('SUCCESS') ? 'SUCCESS' : 'FAILED',
-        amount: '500'
-      };
       this.loadLastRouting();
       this.loadStats();
       this.loadPayments();
@@ -137,10 +129,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (data && data.length > 0) {
         const lastPayment = data[0];
         this.http.get(`${this.apiUrl}/payments/${lastPayment.id}/routing`).subscribe((routing: any) => {
-          this.lastRouting = {
-            payment: lastPayment,
-            decisions: routing
-          };
+          this.lastRouting = { payment: lastPayment, decisions: routing };
         });
       }
     });
@@ -155,12 +144,13 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  runSmartTest() {
+  runLoadTest() {
     this.loadTestRunning = true;
+    this.loadTestResult = '';
     this.http.get(`${this.apiUrl}/loadtest/smart?payments=${this.loadTestCount}`,
       { responseType: 'text' }
     ).subscribe(result => {
-      this.parseTestResult(result, 'smart');
+      this.loadTestResult = result;
       this.loadTestRunning = false;
       this.loadStats();
       this.loadPayments();
@@ -168,37 +158,8 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  runSingleTest() {
-    this.loadTestRunning = true;
-    this.http.get(`${this.apiUrl}/loadtest/single?payments=${this.loadTestCount}`,
-      { responseType: 'text' }
-    ).subscribe(result => {
-      this.parseTestResult(result, 'single');
-      this.loadTestRunning = false;
-    });
-  }
-
-  parseTestResult(result: string, type: string) {
-    const parts = result.split('|').map(p => p.trim());
-    const total = parseInt(parts[1].split(':')[1].trim());
-    const success = parseInt(parts[2].split(':')[1].trim());
-    const failed = parseInt(parts[3].split(':')[1].trim());
-    const rate = parseFloat(parts[4].split(':')[1].trim());
-
-    if (!this.comparisonResult) this.comparisonResult = {};
-    this.comparisonResult[type] = { total, success, failed, rate };
-  }
-
   flushRedis() {
     this.http.post(`${this.apiUrl}/redis/flush`, {}, { responseType: 'text' })
-      .subscribe(() => {
-        this.pollHealth();
-      });
-  }
-
-  getImprovementText(): string {
-    if (!this.comparisonResult?.smart || !this.comparisonResult?.single) return '';
-    const diff = this.comparisonResult.smart.rate - this.comparisonResult.single.rate;
-    return diff > 0 ? `+${diff.toFixed(1)}% better with smart routing` : `${diff.toFixed(1)}% vs single processor`;
+      .subscribe(() => this.pollHealth());
   }
 }

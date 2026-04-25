@@ -42,19 +42,13 @@
         <div class="score-label">Routing Score</div>
         <div class="score-value">{{ p.score | number:'1.1-1' }}</div>
         <div class="score-bar-track">
-          <div class="score-bar-fill" [style.width.%]="(p.score / getMaxScore()) * 100"></div>
+          <div class="score-bar-fill" [style.width.%]="(p.score / 100) * 100"></div>
         </div>
-        <div class="score-hint" *ngIf="p.state === 'CLOSED'">
-          Higher score = more traffic routed here
-        </div>
-        <div class="score-hint open" *ngIf="p.state === 'OPEN'">
-          Circuit open — no traffic until recovery
-        </div>
-        <div class="score-hint half" *ngIf="p.state === 'HALF_OPEN'">
-          Receiving probe payments to test recovery
-        </div>
+        <div class="score-hint" *ngIf="p.state === 'CLOSED'">Higher score = more traffic routed here</div>
+        <div class="score-hint open" *ngIf="p.state === 'OPEN'">Circuit open — no traffic until recovery</div>
+        <div class="score-hint half" *ngIf="p.state === 'HALF_OPEN'">Receiving probe payments to test recovery</div>
       </div>
-
+      
       <div class="metrics">
         <div class="metric-row">
           <span class="metric-label">Success Rate</span>
@@ -73,7 +67,7 @@
           <span class="metric-value red">{{ p.consecutiveFailures }}</span>
         </div>
         <div class="metric-row" *ngIf="p.state === 'HALF_OPEN'">
-          <span class="metric-label">Consecutive Successes</span>
+          <span class="metric-label">Recovery Progress</span>
           <span class="metric-value green">{{ p.consecutiveSuccesses }} / 3</span>
         </div>
       </div>
@@ -90,7 +84,7 @@
       Payment #{{ lastRouting.payment.id }} —
       ₹{{ lastRouting.payment.amount }} —
       {{ lastRouting.payment.processor }} —
-      <span [ngClass]="lastRouting.payment.status === 'SUCCESS' ? 'green' : 'red'">
+      <span [class]="lastRouting.payment.status === 'SUCCESS' ? 'green' : 'red'">
         {{ lastRouting.payment.status }}
       </span>
     </div>
@@ -100,7 +94,8 @@
         <span class="routing-processor">{{ d.processorName }}</span>
         <span class="routing-score">score: {{ d.score | number:'1.1-1' }}</span>
         <div class="routing-bar-track">
-          <div class="routing-bar-fill" [style.width.%]="(d.score / 500) * 100"
+          <div class="routing-bar-fill"
+               [style.width.%]="(d.score / 100) * 100"
                [ngClass]="d.wasSelected ? 'selected-bar' : ''"></div>
         </div>
         <span class="routing-state">{{ d.state }}</span>
@@ -109,45 +104,25 @@
         <span class="routing-skipped" *ngIf="!d.wasSelected && d.state !== 'OPEN'">available</span>
       </div>
     </div>
+    <div class="routing-note">
+      Scores shown are captured at the moment of routing decision. Current scores on processor cards reflect live Redis data.
+    </div>
   </div>
 
   <div class="controls-section">
     <div class="section-title">Controls</div>
     <div class="controls">
-      <button class="btn-primary" (click)="sendPayment()">
-        Send Payment
-      </button>
+      <button class="btn-primary" (click)="sendPayment()">Send Payment</button>
       <div class="test-group">
         <input type="number" [(ngModel)]="loadTestCount" min="1" max="200" class="count-input"/>
-        <button class="btn-secondary" (click)="runSmartTest()" [disabled]="loadTestRunning">
-          {{ loadTestRunning ? 'Running...' : 'Run Smart Test' }}
-        </button>
-        <button class="btn-outline" (click)="runSingleTest()" [disabled]="loadTestRunning">
-          Run Single Processor Test
+        <button class="btn-secondary" (click)="runLoadTest()" [disabled]="loadTestRunning">
+          {{ loadTestRunning ? 'Running...' : 'Run Load Test' }}
         </button>
       </div>
-      <button class="btn-ghost" (click)="flushRedis()">
-        Reset Scores
-      </button>
+      <button class="btn-ghost" (click)="flushRedis()">Reset Scores</button>
     </div>
-
-    <div class="comparison-panel" *ngIf="comparisonResult">
-      <div class="comparison-title">Test Comparison</div>
-      <div class="comparison-grid">
-        <div class="comparison-card smart" *ngIf="comparisonResult.smart">
-          <div class="comp-label">Smart Routing</div>
-          <div class="comp-rate">{{ comparisonResult.smart.rate }}%</div>
-          <div class="comp-detail">{{ comparisonResult.smart.success }} / {{ comparisonResult.smart.total }} succeeded</div>
-        </div>
-        <div class="comparison-vs" *ngIf="comparisonResult.smart && comparisonResult.single">
-          <div class="improvement">{{ getImprovementText() }}</div>
-        </div>
-        <div class="comparison-card single" *ngIf="comparisonResult.single">
-          <div class="comp-label">Single Processor</div>
-          <div class="comp-rate">{{ comparisonResult.single.rate }}%</div>
-          <div class="comp-detail">{{ comparisonResult.single.success }} / {{ comparisonResult.single.total }} succeeded</div>
-        </div>
-      </div>
+    <div class="load-test-result" *ngIf="loadTestResult">
+      {{ loadTestResult }}
     </div>
   </div>
 
@@ -192,11 +167,7 @@
             <tr *ngFor="let e of events">
               <td>{{ e.timeStamp | date:'HH:mm:ss' }}</td>
               <td>{{ e.processorName }}</td>
-              <td>
-                <span class="transition">
-                  {{ e.fromState }} → {{ e.toState }}
-                </span>
-              </td>
+              <td class="transition">{{ e.fromState }} → {{ e.toState }}</td>
             </tr>
           </tbody>
         </table>
