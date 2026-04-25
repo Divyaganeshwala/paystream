@@ -9,7 +9,7 @@ import { HttpClient } from '@angular/common/http';
 })
 export class AppComponent implements OnInit, OnDestroy {
 
-  private apiUrl = 'http://localhost:8080/api';
+  private apiUrl = '/api';
   private pollInterval: any;
 
   processors: any[] = [

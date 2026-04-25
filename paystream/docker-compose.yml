@@ -41,5 +41,13 @@ services:
       - postgres
       - redis
 
+  frontend:
+    build: ./frontend
+    container_name: paystream-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - app
+
 volumes:
   postgres-data:
