@@ -2,6 +2,7 @@ package com.paystream.paystream;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "routing_log")
@@ -26,7 +27,7 @@ public class RoutingLog {
         this.score = score;
         this.state = state;
         this.wasSelected = wasSelected;
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = LocalDateTime.now(ZoneId.of("UTC"));
     }
 
     public Long getId() { return id; }

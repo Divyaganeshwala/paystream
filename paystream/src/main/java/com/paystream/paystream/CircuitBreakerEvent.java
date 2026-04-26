@@ -2,6 +2,7 @@ package com.paystream.paystream;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "circuit_breaker_events")
@@ -22,7 +23,7 @@ public class CircuitBreakerEvent {
         this.processorName = processorName;
         this.fromState = fromState;
         this.toState = toState;
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = LocalDateTime.now(ZoneId.of("UTC"));
     }
 
     public Long getId() { return id; }

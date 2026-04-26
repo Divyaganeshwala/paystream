@@ -9,7 +9,9 @@ import { HttpClient } from '@angular/common/http';
 })
 export class AppComponent implements OnInit, OnDestroy {
 
-  private apiUrl = '/api';
+  private apiUrl = window.location.port === '4200' 
+  ? 'http://localhost:8080/api' 
+  : '/api';
   private pollInterval: any;
 
   processors: any[] = [
@@ -162,4 +164,18 @@ export class AppComponent implements OnInit, OnDestroy {
     this.http.post(`${this.apiUrl}/redis/flush`, {}, { responseType: 'text' })
       .subscribe(() => this.pollHealth());
   }
+  
+formatTime(dateStr: string): string {
+  if (!dateStr) return '';
+  // Always treat as UTC since we store UTC
+  const date = new Date(dateStr + 'Z');
+  return date.toLocaleTimeString('en-IN', { 
+    hour: '2-digit', 
+    minute: '2-digit', 
+    second: '2-digit', 
+    hour12: false 
+  });
 }
+  
+}
+

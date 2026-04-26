@@ -142,7 +142,7 @@
           <tbody>
             <tr *ngFor="let p of payments"
                 [ngClass]="p.status === 'SUCCESS' ? 'row-success' : 'row-failed'">
-              <td>{{ p.createdAt + 'Z' | date:'HH:mm:ss' }}</td>
+              <td>{{ formatTime(p.createdAt) }}</td>
               <td>{{ p.processor }}</td>
               <td>₹{{ p.amount }}</td>
               <td class="status-cell">{{ p.status }}</td>
@@ -165,7 +165,7 @@
           </thead>
           <tbody>
             <tr *ngFor="let e of events">
-              <td>{{ e.timeStamp + 'Z' | date:'HH:mm:ss' }}</td>
+              <td>{{ formatTime(e.timeStamp) }}</td>
               <td>{{ e.processorName }}</td>
               <td class="transition">{{ e.fromState }} → {{ e.toState }}</td>
             </tr>

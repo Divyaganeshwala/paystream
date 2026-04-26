@@ -2,6 +2,7 @@ package com.paystream.paystream;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "payments")
@@ -24,7 +25,7 @@ public class Payment {
         this.currency = currency;
         this.processor = processor;
         this.status = status;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(ZoneId.of("UTC"));
     }
 
     public Long getId() { return id; }
