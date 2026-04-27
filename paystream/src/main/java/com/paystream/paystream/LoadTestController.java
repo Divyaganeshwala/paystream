@@ -13,7 +13,9 @@ public class LoadTestController {
     }
 
     @GetMapping("/smart")
-    public String runLoadTest(@RequestParam int payments) throws InterruptedException {
-        return loadTestService.runTest(payments);
+    public String runLoadTest(@RequestParam int payments,
+                              @RequestParam(defaultValue = "1") int threads)
+            throws InterruptedException {
+        return loadTestService.runConcurrentTest(payments, threads);
     }
 }
