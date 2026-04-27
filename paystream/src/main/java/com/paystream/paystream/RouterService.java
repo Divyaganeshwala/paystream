@@ -2,6 +2,7 @@ package com.paystream.paystream;
 
 import org.springframework.stereotype.Service;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -37,6 +38,24 @@ public class RouterService {
             snapshot.put(processor.name(), calculateScore(redisService.getMetrics(processor)));
         }
         return snapshot;
+    }
+
+    public PaymentProcessor selectProcessor(List<PaymentProcessor> exclude) {
+        PaymentProcessor best = null;
+        double bestScore = -1;
+
+        for (PaymentProcessor processor : PaymentProcessor.values()) {
+            if (exclude.contains(processor)) continue;
+            ProcessorHealth health = healthMap.get(processor);
+            if (!health.isAvailable()) continue;
+            if (health.getState() == ProcessorHealth.CircuitState.HALF_OPEN) return processor;
+            double score = calculateScore(redisService.getMetrics(processor));
+            if (score > bestScore) {
+                bestScore = score;
+                best = processor;
+            }
+        }
+        return best;
     }
 
     public PaymentProcessor selectProcessor() {

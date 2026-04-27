@@ -1,6 +1,9 @@
 package com.paystream.paystream;
 
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -31,42 +34,64 @@ public class PaymentService {
     }
 
     public String processPayment(PaymentRequest request) throws InterruptedException {
-        PaymentProcessor processor = routerService.selectProcessor();
-        if (processor == null) return "All processors are down. Payment failed.";
+        List<PaymentProcessor> tried = new ArrayList<>();
 
-        Map<String, Double> scoreSnapshot = routerService.getScoreSnapshot();
+        for (int attempt = 0; attempt < PaymentProcessor.values().length; attempt++) {
+            PaymentProcessor processor = routerService.selectProcessor(tried);
+            if (processor == null) break;
+            tried.add(processor);
 
-        long start = System.currentTimeMillis();
-        boolean success;
-        if (processor == PaymentProcessor.RAZORPAY) {
-            success = razorpayProcessor.processPayment(request.getAmount(), request.getCurrency());
-        } else if (processor == PaymentProcessor.PAYPAL) {
-            success = payPalProcessor.processPayment(request.getAmount(), request.getCurrency());
-        } else {
-            success = cashfreeProcessor.processPayment(request.getAmount(), request.getCurrency());
+            Map<String, Double> scoreSnapshot = routerService.getScoreSnapshot();
+            long start = System.currentTimeMillis();
+            boolean success;
+
+            if (processor == PaymentProcessor.RAZORPAY) {
+                success = razorpayProcessor.processPayment(request.getAmount(), request.getCurrency());
+            } else if (processor == PaymentProcessor.PAYPAL) {
+                success = payPalProcessor.processPayment(request.getAmount(), request.getCurrency());
+            } else {
+                success = cashfreeProcessor.processPayment(request.getAmount(), request.getCurrency());
+            }
+            long latencyMs = System.currentTimeMillis() - start;
+
+            redisService.recordPaymentResult(processor, success, latencyMs);
+            if (success) routerService.recordSuccess(processor);
+            else routerService.recordFailure(processor);
+
+            if (success) {
+                Payment savedPayment = paymentRepository.save(
+                        new Payment(request.getAmount(), request.getCurrency(),
+                                processor.name(), "SUCCESS")
+                );
+                saveRoutingLog(savedPayment.getId(), scoreSnapshot, processor);
+                return "Payment SUCCESS on: " + processor.name()
+                        + " | Amount: " + request.getAmount()
+                        + " | Attempts: " + (attempt + 1);
+            }
+
+            // failed — wait before retry (exponential backoff)
+            if (attempt < PaymentProcessor.values().length - 1) {
+                Thread.sleep(100 * (long) Math.pow(2, attempt));
+            }
         }
-        long latencyMs = System.currentTimeMillis() - start;
 
-        redisService.recordPaymentResult(processor, success, latencyMs);
-        if (success) routerService.recordSuccess(processor);
-        else routerService.recordFailure(processor);
-
+        // all processors failed
         Payment savedPayment = paymentRepository.save(
-                new Payment(request.getAmount(), request.getCurrency(),
-                        processor.name(), success ? "SUCCESS" : "FAILED")
+                new Payment(request.getAmount(), request.getCurrency(), "NONE", "FAILED")
         );
+        return "Payment FAILED on all processors | Amount: " + request.getAmount();
+    }
 
+    private void saveRoutingLog(Long paymentId, Map<String, Double> scoreSnapshot,
+                                PaymentProcessor selected) {
         for (PaymentProcessor p : PaymentProcessor.values()) {
             ProcessorHealth health = routerService.getHealthMap().get(p);
             routingLogRepository.save(new RoutingLog(
-                    savedPayment.getId(), p.name(),
+                    paymentId, p.name(),
                     scoreSnapshot.get(p.name()),
                     health.getState().name(),
-                    p == processor
+                    p == selected
             ));
         }
-
-        return "Payment " + (success ? "SUCCESS" : "FAILED") + " on: " + processor.name()
-                + " | Amount: " + request.getAmount();
     }
 }
