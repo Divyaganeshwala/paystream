@@ -1,6 +1,8 @@
 package com.paystream.paystream;
 
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,20 +61,7 @@ public class RouterService {
     }
 
     public PaymentProcessor selectProcessor() {
-        PaymentProcessor best = null;
-        double bestScore = -1;
-
-        for (PaymentProcessor processor : PaymentProcessor.values()) {
-            ProcessorHealth health = healthMap.get(processor);
-            if (!health.isAvailable()) continue;
-            if (health.getState() == ProcessorHealth.CircuitState.HALF_OPEN) return processor;
-            double score = calculateScore(redisService.getMetrics(processor));
-            if (score > bestScore) {
-                bestScore = score;
-                best = processor;
-            }
-        }
-        return best;
+        return selectProcessor(new ArrayList<>());
     }
 
     public void recordSuccess(PaymentProcessor processor) {

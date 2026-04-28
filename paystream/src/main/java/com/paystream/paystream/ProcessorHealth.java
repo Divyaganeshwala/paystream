@@ -12,7 +12,6 @@ public class ProcessorHealth {
         HALF_OPEN
     }
 
-    private static final int FAILURE_THRESHOLD = 3;
     private static final int SUCCESS_THRESHOLD = 3;
     private static final int OPEN_TIMEOUT_SECONDS = 30;
 

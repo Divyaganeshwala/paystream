@@ -13,10 +13,6 @@ public class LoadTestService {
         this.paymentService = paymentService;
     }
 
-    public String runTest(int totalPayments) throws InterruptedException {
-        return runConcurrentTest(totalPayments, 1);
-    }
-
     public String runConcurrentTest(int totalPayments, int threads) throws InterruptedException {
         ExecutorService executor = Executors.newFixedThreadPool(threads);
         AtomicInteger success = new AtomicInteger(0);
