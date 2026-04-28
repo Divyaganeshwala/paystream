@@ -45,6 +45,13 @@ public class RedisService {
         return new ProcessorMetrics(successRate, avgLatency);
     }
 
+    public long getLastMinuteCount(PaymentProcessor processor) {
+        String key = "processor:" + processor.name() + ":" +
+                LocalDateTime.now().format(formatter);
+        Object raw = redisTemplate.opsForHash().get(key, "totalCount");
+        return raw == null ? 0L : Long.parseLong(raw.toString());
+    }
+
     public void flushAll() {
         redisTemplate.getConnectionFactory().getConnection().serverCommands().flushAll();
     }

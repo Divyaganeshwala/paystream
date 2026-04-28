@@ -21,6 +21,7 @@ public class LoadTestService {
         ExecutorService executor = Executors.newFixedThreadPool(threads);
         AtomicInteger success = new AtomicInteger(0);
         AtomicInteger failed = new AtomicInteger(0);
+        AtomicInteger totalRetries = new AtomicInteger(0);
         CountDownLatch latch = new CountDownLatch(totalPayments);
 
         long start = System.currentTimeMillis();
@@ -34,6 +35,11 @@ public class LoadTestService {
                     String response = paymentService.processPayment(request);
                     if (response.contains("SUCCESS")) success.incrementAndGet();
                     else failed.incrementAndGet();
+
+                    // count retries from response
+                    if (response.contains("Attempts: 2")) totalRetries.incrementAndGet();
+                    else if (response.contains("Attempts: 3")) totalRetries.addAndGet(2);
+
                 } catch (Exception e) {
                     failed.incrementAndGet();
                 } finally {
@@ -54,6 +60,7 @@ public class LoadTestService {
                 " | Success: " + success.get() +
                 " | Failed: " + failed.get() +
                 " | Rate: " + rate + "%" +
+                " | Retries: " + totalRetries.get() +
                 " | Duration: " + duration + "ms" +
                 " | Throughput: " + String.format("%.2f", throughput) + " payments/sec";
     }

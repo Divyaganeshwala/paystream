@@ -22,6 +22,11 @@ public class ProcessorHealth {
     private AtomicInteger consecutiveSuccesses = new AtomicInteger(0);
     private LocalDateTime openedAt;
 
+    private static final int CONSECUTIVE_THRESHOLD = 3;
+    private static final double SLA = 0.95;
+    private static final double TOLERANCE = 0.10;
+    private static final int MIN_REQUESTS_PER_MINUTE = 10;
+
     private Consumer<String[]> onStateChange;
 
     public ProcessorHealth(PaymentProcessor processor) {
@@ -61,17 +66,7 @@ public class ProcessorHealth {
     }
 
     public void recordFailure() {
-        CircuitState before = state;
-        consecutiveFailures.incrementAndGet();
-        consecutiveSuccesses.set(0);
-        if (state == CircuitState.HALF_OPEN) {
-            state = CircuitState.OPEN;
-            openedAt = LocalDateTime.now();
-        } else if (consecutiveFailures.get() >= FAILURE_THRESHOLD) {
-            state = CircuitState.OPEN;
-            openedAt = LocalDateTime.now();
-        }
-        notifyStateChange(before, state);
+        recordFailure(new ProcessorMetrics(100.0, 0.0), 0);
     }
 
     public void recordSuccess() {
@@ -82,5 +77,31 @@ public class ProcessorHealth {
             state = CircuitState.CLOSED;
         }
         notifyStateChange(before, state);
+    }
+
+    public void recordFailure(ProcessorMetrics metrics, long lastMinuteCount) {
+        CircuitState before = state;
+        consecutiveFailures.incrementAndGet();
+        consecutiveSuccesses.set(0);
+
+        if (state == CircuitState.HALF_OPEN) {
+            state = CircuitState.OPEN;
+            openedAt = LocalDateTime.now();
+        } else if (shouldOpen(metrics, lastMinuteCount)) {
+            state = CircuitState.OPEN;
+            openedAt = LocalDateTime.now();
+        }
+        notifyStateChange(before, state);
+    }
+
+    private boolean shouldOpen(ProcessorMetrics metrics, long lastMinuteCount) {
+        // Rule 1: consecutive failures
+        if (consecutiveFailures.get() >= CONSECUTIVE_THRESHOLD) return true;
+
+        // Rule 2: SLA breach with sufficient traffic
+        if (lastMinuteCount >= MIN_REQUESTS_PER_MINUTE &&
+                metrics.getSuccessRate() < (SLA - TOLERANCE) * 100) return true;
+
+        return false;
     }
 }

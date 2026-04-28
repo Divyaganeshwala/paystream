@@ -80,6 +80,8 @@ public class RouterService {
     }
 
     public void recordFailure(PaymentProcessor processor) {
-        healthMap.get(processor).recordFailure();
+        ProcessorMetrics metrics = redisService.getMetrics(processor);
+        long lastMinuteCount = redisService.getLastMinuteCount(processor);
+        healthMap.get(processor).recordFailure(metrics, lastMinuteCount);
     }
 }
