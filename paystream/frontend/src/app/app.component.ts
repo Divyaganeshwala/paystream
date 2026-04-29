@@ -50,34 +50,22 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   pollHealth() {
-    this.http.get(`${this.apiUrl}/health`, { responseType: 'text' }).subscribe(data => {
-      this.parseHealth(data);
-      this.updateSystemStatus();
+    this.http.get<any[]>(`${this.apiUrl}/health`).subscribe(data => {
+        data.forEach(h => {
+            const processor = this.processors.find(p => p.name === h.name);
+            if (processor) {
+                processor.state = h.state;
+                processor.consecutiveFailures = h.consecutiveFailures;
+                processor.consecutiveSuccesses = h.consecutiveSuccesses;
+                processor.avgLatency = h.avgLatency;
+                processor.successRate = h.successRate;
+                processor.score = h.score;
+            }
+        });
+        this.updateSystemStatus();
     });
   }
 
-  parseHealth(data: string) {
-    const lines = data.trim().split('\n');
-    lines.forEach(line => {
-      const name = line.split('→')[0].trim();
-      const processor = this.processors.find(p => p.name === name);
-      if (processor) {
-        processor.state = this.extract(line, 'state: ', ' |');
-        processor.consecutiveFailures = parseInt(this.extract(line, 'consecutiveFailures: ', ' |'));
-        processor.consecutiveSuccesses = parseInt(this.extract(line, 'consecutiveSuccesses: ', ' |'));
-        processor.avgLatency = parseFloat(this.extract(line, 'avgLatency: ', 'ms'));
-        processor.successRate = parseFloat(this.extract(line, 'successRate: ', '%'));
-        processor.score = parseFloat(this.extract(line, 'score: ', ' |'));
-        //processor.totalHandled = parseInt(this.extract(line, 'totalHandled: ', '\n'));
-      }
-    });
-  }
-
-  extract(line: string, start: string, end: string): string {
-    const startIdx = line.indexOf(start) + start.length;
-    const endIdx = line.indexOf(end, startIdx);
-    return endIdx === -1 ? line.substring(startIdx).trim() : line.substring(startIdx, endIdx).trim();
-  }
 
   updateSystemStatus() {
     const anyOpen = this.processors.some(p => p.state === 'OPEN');
@@ -117,7 +105,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   loadEvents() {
     this.http.get(`${this.apiUrl}/events`).subscribe((data: any) => {
-      this.events = data.reverse();
+      this.events = data;
     });
   }
 
@@ -159,14 +147,36 @@ export class AppComponent implements OnInit, OnDestroy {
   runLoadTest() {
     this.loadTestRunning = true;
     this.loadTestResult = '';
+    
+    // switch to fast polling during load test
+    clearInterval(this.pollInterval);
+    this.pollInterval = setInterval(() => {
+        this.pollHealth();
+        this.loadStats();
+        this.loadPayments();
+        this.loadEvents();
+    }, 1000); // 1 second during load test
+
     this.http.get(`${this.apiUrl}/loadtest/smart?payments=${this.loadTestCount}&threads=${this.threadCount}`,
-      { responseType: 'text' }
+        { responseType: 'text' }
     ).subscribe(result => {
-      this.loadTestResult = result;
-      this.loadTestRunning = false;
-      this.loadStats();
-      this.loadPayments();
-      this.pollHealth();
+        this.loadTestResult = result;
+        this.loadTestRunning = false;
+        
+        // restore normal polling after load test
+        clearInterval(this.pollInterval);
+        this.pollInterval = setInterval(() => {
+            this.pollHealth();
+            this.loadStats();
+            this.loadPayments();
+            this.loadEvents();
+        }, 5000);
+        
+        // immediate refresh on completion
+        this.pollHealth();
+        this.loadStats();
+        this.loadPayments();
+        this.loadEvents();
     });
   }
 

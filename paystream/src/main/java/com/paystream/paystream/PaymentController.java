@@ -1,6 +1,8 @@
 package com.paystream.paystream;
 
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,26 +48,25 @@ public class PaymentController {
     }
 
     @GetMapping("/health")
-    public String getHealth() {
-        StringBuilder sb = new StringBuilder();
+    public List<Map<String, Object>> getHealth() {
+        List<Map<String, Object>> result = new ArrayList<>();
         for (PaymentProcessor processor : PaymentProcessor.values()) {
             ProcessorHealth health = routerService.getHealthMap().get(processor);
             health.isAvailable();
             ProcessorMetrics metrics = redisService.getMetrics(processor);
             double score = routerService.calculateScore(metrics);
-            sb.append(processor.name())
-                    .append(" → state: ").append(health.getState())
-                    .append(" | consecutiveFailures: ").append(health.getFailureCount())
-                    .append(" | consecutiveSuccesses: ").append(health.getSuccessCount())
-                    .append(" | avgLatency: ")
-                    .append(String.format("%.0f", metrics.getAverageLatency())).append("ms")
-                    .append(" | successRate: ")
-                    .append(String.format("%.1f", metrics.getSuccessRate())).append("%")
-                    .append(" | score: ")
-                    .append(String.format("%.2f", score))
-                    .append("\n");
+
+            Map<String, Object> map = new HashMap<>();
+            map.put("name", processor.name());
+            map.put("state", health.getState().name());
+            map.put("consecutiveFailures", health.getFailureCount());
+            map.put("consecutiveSuccesses", health.getSuccessCount());
+            map.put("avgLatency", metrics.getAverageLatency());
+            map.put("successRate", metrics.getSuccessRate());
+            map.put("score", score);
+            result.add(map);
         }
-        return sb.toString();
+        return result;
     }
 
     @GetMapping("/stats")

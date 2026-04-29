@@ -18,7 +18,7 @@ public class RouterService {
         for (PaymentProcessor processor : PaymentProcessor.values()) {
             ProcessorHealth health = new ProcessorHealth(processor);
             health.setOnStateChange(event ->
-                    eventRepository.save(new CircuitBreakerEvent(event[0], event[1], event[2]))
+                    eventRepository.save(new CircuitBreakerEvent(event[0], event[1], event[2], event[3]))
             );
             healthMap.put(processor, health);
         }

@@ -42,9 +42,9 @@ public class ProcessorHealth {
         this.onStateChange = callback;
     }
 
-    private void notifyStateChange(CircuitState from, CircuitState to) {
+    private void notifyStateChange(CircuitState from, CircuitState to, String reason) {
         if (onStateChange != null && from != to) {
-            onStateChange.accept(new String[]{processor.name(), from.name(), to.name()});
+            onStateChange.accept(new String[]{processor.name(), from.name(), to.name(), reason});
         }
     }
 
@@ -56,7 +56,7 @@ public class ProcessorHealth {
                 CircuitState before = state;
                 state = CircuitState.HALF_OPEN;
                 consecutiveSuccesses.set(0);
-                notifyStateChange(before, state);
+                notifyStateChange(before, state, "30s timeout elapsed, probing");
                 return true;
             }
             return false;
@@ -74,10 +74,11 @@ public class ProcessorHealth {
         consecutiveSuccesses.incrementAndGet();
         if (state == CircuitState.HALF_OPEN && consecutiveSuccesses.get() >= SUCCESS_THRESHOLD) {
             state = CircuitState.CLOSED;
+            notifyStateChange(before, state, "Recovery: 3 consecutive successes");
+        } else {
+            notifyStateChange(before, state, "");
         }
-        notifyStateChange(before, state);
     }
-
     public void recordFailure(ProcessorMetrics metrics, long lastMinuteCount) {
         CircuitState before = state;
         consecutiveFailures.incrementAndGet();
@@ -86,11 +87,22 @@ public class ProcessorHealth {
         if (state == CircuitState.HALF_OPEN) {
             state = CircuitState.OPEN;
             openedAt = LocalDateTime.now();
-        } else if (shouldOpen(metrics, lastMinuteCount)) {
+            notifyStateChange(before, state, "Failed during recovery (HALF_OPEN)");
+        } else if (consecutiveFailures.get() >= CONSECUTIVE_THRESHOLD) {
             state = CircuitState.OPEN;
             openedAt = LocalDateTime.now();
+            notifyStateChange(before, state,
+                    consecutiveFailures.get() + " consecutive failures");
+        } else if (lastMinuteCount >= MIN_REQUESTS_PER_MINUTE &&
+                metrics.getSuccessRate() < (SLA - TOLERANCE) * 100) {
+            state = CircuitState.OPEN;
+            openedAt = LocalDateTime.now();
+            notifyStateChange(before, state,
+                    String.format("SLA breach: %.1f%% < 85%% over %d requests",
+                            metrics.getSuccessRate(), lastMinuteCount));
+        } else {
+            notifyStateChange(before, state, "");
         }
-        notifyStateChange(before, state);
     }
 
     private boolean shouldOpen(ProcessorMetrics metrics, long lastMinuteCount) {

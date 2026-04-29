@@ -19,13 +19,17 @@ public class CircuitBreakerEvent {
 
     public CircuitBreakerEvent() {}
 
-    public CircuitBreakerEvent(String processorName, String fromState, String toState) {
+    private String reason;
+
+    public CircuitBreakerEvent(String processorName, String fromState, String toState, String reason) {
         this.processorName = processorName;
         this.fromState = fromState;
         this.toState = toState;
+        this.reason = reason;
         this.timestamp = LocalDateTime.now(ZoneId.of("UTC"));
     }
 
+    public String getReason() { return reason; }
     public Long getId() { return id; }
     public String getProcessorName() { return processorName; }
     public String getFromState() { return fromState; }

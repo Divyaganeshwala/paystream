@@ -162,6 +162,7 @@
               <th>Time</th>
               <th>Processor</th>
               <th>Transition</th>
+              <th>Reason</th>
             </tr>
           </thead>
           <tbody>
@@ -169,6 +170,7 @@
               <td>{{ formatTime(e.timeStamp) }}</td>
               <td>{{ e.processorName }}</td>
               <td class="transition">{{ e.fromState }} → {{ e.toState }}</td>
+              <td class="reason">{{ e.reason }}</td>
             </tr>
           </tbody>
         </table>
