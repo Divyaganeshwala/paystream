@@ -29,6 +29,7 @@ export class AppComponent implements OnInit, OnDestroy {
   loadTestResult: string = '';
   systemStatus: string = 'HEALTHY';
   threadCount: number = 1;
+  sendingPayment: boolean = false;
 
   constructor(private http: HttpClient) {}
 
@@ -110,16 +111,18 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   sendPayment() {
-      this.http.post(`${this.apiUrl}/payment`,
-          { amount: '500', currency: 'INR' },
-          { responseType: 'text' }
-      ).subscribe(response => {
-          this.loadLastRouting();
-          this.loadStats();
-          this.loadPayments();
-          this.pollHealth();
-          this.loadEvents();
-      });
+    this.sendingPayment = true;
+    this.http.post(`${this.apiUrl}/payment`,
+        { amount: '500', currency: 'INR' },
+        { responseType: 'text' }
+    ).subscribe(response => {
+        this.sendingPayment = false;
+        this.loadLastRouting();
+        this.loadStats();
+        this.loadPayments();
+        this.pollHealth();
+        this.loadEvents();
+    });
   }
 
   loadLastRouting() {
@@ -181,8 +184,12 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   flushRedis() {
+    if (!confirm('Reset all processor scores? This will wipe all Redis data.')) return;
     this.http.post(`${this.apiUrl}/redis/flush`, {}, { responseType: 'text' })
-      .subscribe(() => this.pollHealth());
+        .subscribe(() => {
+            this.pollHealth();
+            this.loadStats();
+        });
   }
   
 formatTime(dateStr: string): string {
