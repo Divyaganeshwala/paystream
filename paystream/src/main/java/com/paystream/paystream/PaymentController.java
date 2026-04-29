@@ -37,7 +37,7 @@ public class PaymentController {
 
     @GetMapping("/payments")
     public List<Payment> getAllPayments() {
-        return paymentRepository.findAllByOrderByCreatedAtDesc();
+        return paymentRepository.findTop200ByOrderByCreatedAtDesc();
     }
 
     @GetMapping("/payments/{id}/routing")
@@ -63,8 +63,6 @@ public class PaymentController {
                     .append(String.format("%.1f", metrics.getSuccessRate())).append("%")
                     .append(" | score: ")
                     .append(String.format("%.2f", score))
-                    .append(" | totalHandled: ")
-                    .append(paymentRepository.countByProcessor(processor.name()))
                     .append("\n");
         }
         return sb.toString();
@@ -76,17 +74,25 @@ public class PaymentController {
         long success = paymentRepository.countByStatus("SUCCESS");
         long failed = paymentRepository.countByStatus("FAILED");
         double rate = total == 0 ? 0 : (success * 100.0) / total;
+
         Map<String, Object> stats = new HashMap<>();
         stats.put("total", total);
         stats.put("success", success);
         stats.put("failed", failed);
         stats.put("successRate", Math.round(rate * 10.0) / 10.0);
+
+        // Add per-processor counts
+        Map<String, Long> handledPerProcessor = new HashMap<>();
+        for (PaymentProcessor p : PaymentProcessor.values()) {
+            handledPerProcessor.put(p.name(), paymentRepository.countByProcessor(p.name()));
+        }
+        stats.put("handledPerProcessor", handledPerProcessor);
         return stats;
     }
 
     @GetMapping("/events")
     public List<CircuitBreakerEvent> getEvents() {
-        return circuitBreakerEventRepository.findAll();
+        return circuitBreakerEventRepository.findTop50ByOrderByTimestampDesc();
     }
 
     @PostMapping("/simulate/failure/{processorName}")

@@ -8,5 +8,5 @@ import java.util.List;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     long countByStatus(String status);
     long countByProcessor(String processor);
-    List<Payment> findAllByOrderByCreatedAtDesc();
+    List<Payment> findTop200ByOrderByCreatedAtDesc();
 }

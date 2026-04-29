@@ -28,6 +28,7 @@ export class AppComponent implements OnInit, OnDestroy {
   loadTestRunning: boolean = false;
   loadTestResult: string = '';
   systemStatus: string = 'HEALTHY';
+  threadCount: number = 1;
 
   constructor(private http: HttpClient) {}
 
@@ -67,7 +68,7 @@ export class AppComponent implements OnInit, OnDestroy {
         processor.avgLatency = parseFloat(this.extract(line, 'avgLatency: ', 'ms'));
         processor.successRate = parseFloat(this.extract(line, 'successRate: ', '%'));
         processor.score = parseFloat(this.extract(line, 'score: ', ' |'));
-        processor.totalHandled = parseInt(this.extract(line, 'totalHandled: ', '\n'));
+        //processor.totalHandled = parseInt(this.extract(line, 'totalHandled: ', '\n'));
       }
     });
   }
@@ -98,7 +99,13 @@ export class AppComponent implements OnInit, OnDestroy {
 
   loadStats() {
     this.http.get(`${this.apiUrl}/stats`).subscribe((data: any) => {
-      this.stats = data;
+        this.stats = data;
+        // update totalHandled on each processor card
+        if (data.handledPerProcessor) {
+            this.processors.forEach(p => {
+                p.totalHandled = data.handledPerProcessor[p.name] ?? 0;
+            });
+        }
     });
   }
 
@@ -115,15 +122,16 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   sendPayment() {
-    this.http.post(`${this.apiUrl}/payment`,
-      { amount: '500', currency: 'INR' },
-      { responseType: 'text' }
-    ).subscribe(response => {
-      this.loadLastRouting();
-      this.loadStats();
-      this.loadPayments();
-      this.pollHealth();
-    });
+      this.http.post(`${this.apiUrl}/payment`,
+          { amount: '500', currency: 'INR' },
+          { responseType: 'text' }
+      ).subscribe(response => {
+          this.loadLastRouting();
+          this.loadStats();
+          this.loadPayments();
+          this.pollHealth();
+          this.loadEvents();
+      });
   }
 
   loadLastRouting() {
@@ -139,17 +147,19 @@ export class AppComponent implements OnInit, OnDestroy {
 
   simulateFailure(processorName: string) {
     this.http.post(`${this.apiUrl}/simulate/failure/${processorName}`, {},
-      { responseType: 'text' }
+        { responseType: 'text' }
     ).subscribe(() => {
-      this.pollHealth();
-      this.loadEvents();
+        this.pollHealth();
+        this.loadEvents();
+        this.loadStats();
+        this.loadPayments();
     });
   }
 
   runLoadTest() {
     this.loadTestRunning = true;
     this.loadTestResult = '';
-    this.http.get(`${this.apiUrl}/loadtest/smart?payments=${this.loadTestCount}`,
+    this.http.get(`${this.apiUrl}/loadtest/smart?payments=${this.loadTestCount}&threads=${this.threadCount}`,
       { responseType: 'text' }
     ).subscribe(result => {
       this.loadTestResult = result;

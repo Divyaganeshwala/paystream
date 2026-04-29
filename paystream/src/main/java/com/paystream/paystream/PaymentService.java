@@ -68,11 +68,6 @@ public class PaymentService {
                         + " | Amount: " + request.getAmount()
                         + " | Attempts: " + (attempt + 1);
             }
-
-            // failed — wait before retry (exponential backoff)
-            if (attempt < PaymentProcessor.values().length - 1) {
-                Thread.sleep(100 * (long) Math.pow(2, attempt));
-            }
         }
 
         // all processors failed
