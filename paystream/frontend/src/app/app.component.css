@@ -380,3 +380,13 @@ tr:hover { background: #fafafa; }
     margin-left: 8px;
     vertical-align: middle;
 }
+
+.row-selected {
+    background: rgba(183, 210, 250, 0.628) !important;
+    box-shadow: 0 2px 8px rgba(13, 118, 239, 0.15);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.clickable-row {
+    cursor: pointer;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}

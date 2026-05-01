@@ -139,7 +139,7 @@
     <div class="panel">
       <div class="section-title">Payment History</div>
       <div class="table-wrap">
-        <table>
+        <table class="payment-table">
           <thead>
               <tr>
                   <th>Initiated</th>
@@ -151,7 +151,11 @@
           </thead>
           <tbody>
               <tr *ngFor="let p of payments"
-                  [ngClass]="p.status === 'SUCCESS' ? 'row-success' : 'row-failed'"
+                  [ngClass]="{
+                      'row-success': p.status === 'SUCCESS' && p.id !== selectedPaymentId,
+                      'row-failed': p.status === 'FAILED' && p.id !== selectedPaymentId,
+                      'row-selected': p.id === selectedPaymentId
+                  }"
                   (click)="selectPayment(p)"
                   class="clickable-row">
                   <td>{{ formatTime(p.createdAt) }}</td>

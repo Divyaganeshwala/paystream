@@ -30,6 +30,7 @@ export class AppComponent implements OnInit, OnDestroy {
   systemStatus: string = 'HEALTHY';
   threadCount: number = 1;
   sendingPayment: boolean = false;
+  selectedPaymentId: number | null = null;
 
   constructor(private http: HttpClient) {}
 
@@ -44,6 +45,12 @@ export class AppComponent implements OnInit, OnDestroy {
       this.loadPayments();
       this.loadEvents();
     }, 5000);
+    document.addEventListener('click', (event: MouseEvent) => {
+        const table = document.querySelector('.payment-table');
+        if (table && !table.contains(event.target as Node)) {
+            this.selectedPaymentId = null;
+        }
+    });
   }
 
   ngOnDestroy() {
@@ -206,6 +213,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   selectPayment(payment: any) {
+    this.selectedPaymentId = payment.id;
     this.http.get(`${this.apiUrl}/payments/${payment.id}/routing`).subscribe((routing: any) => {
         this.lastRouting = { payment: payment, decisions: routing };
     });
