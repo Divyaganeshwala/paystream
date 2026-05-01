@@ -74,7 +74,6 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-
   updateSystemStatus() {
     const anyOpen = this.processors.some(p => p.state === 'OPEN');
     const anyHalfOpen = this.processors.some(p => p.state === 'HALF_OPEN');
@@ -96,7 +95,6 @@ export class AppComponent implements OnInit, OnDestroy {
   loadStats() {
     this.http.get(`${this.apiUrl}/stats`).subscribe((data: any) => {
         this.stats = data;
-        // update totalHandled on each processor card
         if (data.handledPerProcessor) {
             this.processors.forEach(p => {
                 p.totalHandled = data.handledPerProcessor[p.name] ?? 0;
@@ -158,14 +156,13 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loadTestRunning = true;
     this.loadTestResult = '';
     
-    // switch to fast polling during load test
     clearInterval(this.pollInterval);
     this.pollInterval = setInterval(() => {
         this.pollHealth();
         this.loadStats();
         this.loadPayments();
         this.loadEvents();
-    }, 1000); // 1 second during load test
+    }, 1000);
 
     this.http.get(`${this.apiUrl}/loadtest/smart?payments=${this.loadTestCount}&threads=${this.threadCount}`,
         { responseType: 'text' }
@@ -173,7 +170,6 @@ export class AppComponent implements OnInit, OnDestroy {
         this.loadTestResult = result;
         this.loadTestRunning = false;
         
-        // restore normal polling after load test
         clearInterval(this.pollInterval);
         this.pollInterval = setInterval(() => {
             this.pollHealth();
@@ -182,7 +178,6 @@ export class AppComponent implements OnInit, OnDestroy {
             this.loadEvents();
         }, 5000);
         
-        // immediate refresh on completion
         this.pollHealth();
         this.loadStats();
         this.loadPayments();
@@ -201,7 +196,6 @@ export class AppComponent implements OnInit, OnDestroy {
   
   formatTime(dateStr: string): string {
     if (!dateStr) return '';
-    // Always treat as UTC since we store UTC
     const date = new Date(dateStr + 'Z');
     return date.toLocaleTimeString('en-IN', { 
       hour: '2-digit', 
@@ -218,6 +212,4 @@ export class AppComponent implements OnInit, OnDestroy {
         this.lastRouting = { payment: payment, decisions: routing };
     });
   }
-  
 }
-
