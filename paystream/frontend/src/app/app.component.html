@@ -62,9 +62,9 @@
           <span class="metric-label">Total Handled</span>
           <span class="metric-value">{{ p.totalHandled }}</span>
         </div>
-        <div class="metric-row" *ngIf="p.consecutiveFailures > 0">
-          <span class="metric-label">Consecutive Failures</span>
-          <span class="metric-value red">{{ p.consecutiveFailures }}</span>
+        <div class="metric-row" *ngIf="p.consecutiveFailures > 0 && p.state === 'CLOSED'">
+            <span class="metric-label">Consecutive Failures</span>
+            <span class="metric-value red">{{ p.consecutiveFailures }} / 3</span>
         </div>
         <div class="metric-row" *ngIf="p.state === 'HALF_OPEN'">
           <span class="metric-label">Recovery Progress</span>
