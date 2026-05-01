@@ -42,6 +42,17 @@ public class RouterService {
         return snapshot;
     }
 
+    public Map<String, Map<String, Object>> getFullSnapshot() {
+        Map<String, Map<String, Object>> snapshot = new HashMap<>();
+        for (PaymentProcessor processor : PaymentProcessor.values()) {
+            Map<String, Object> data = new HashMap<>();
+            data.put("score", calculateScore(redisService.getMetrics(processor)));
+            data.put("state", healthMap.get(processor).getState().name());
+            snapshot.put(processor.name(), data);
+        }
+        return snapshot;
+    }
+
     public PaymentProcessor selectProcessor(List<PaymentProcessor> exclude) {
         PaymentProcessor best = null;
         double bestScore = -1;

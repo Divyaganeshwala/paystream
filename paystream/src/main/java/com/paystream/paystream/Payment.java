@@ -17,15 +17,20 @@ public class Payment {
     private String processor;
     private String status;
     private LocalDateTime createdAt;
+    private LocalDateTime completedAt;
+    private boolean usedFallback;
 
     public Payment() {}
 
-    public Payment(String amount, String currency, String processor, String status) {
+    public Payment(String amount, String currency, String processor, String status,
+                   boolean usedFallback, LocalDateTime createdAt) {
         this.amount = amount;
         this.currency = currency;
         this.processor = processor;
         this.status = status;
-        this.createdAt = LocalDateTime.now(ZoneId.of("UTC"));
+        this.usedFallback = usedFallback;
+        this.createdAt = createdAt;
+        this.completedAt = LocalDateTime.now(ZoneId.of("UTC"));
     }
 
     public Long getId() { return id; }
@@ -33,5 +38,7 @@ public class Payment {
     public String getCurrency() { return currency; }
     public String getProcessor() { return processor; }
     public String getStatus() { return status; }
+    public boolean isUsedFallback() { return usedFallback; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getCompletedAt() { return completedAt; }
 }

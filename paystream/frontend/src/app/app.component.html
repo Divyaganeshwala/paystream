@@ -79,7 +79,12 @@
   </div>
 
   <div class="routing-panel" *ngIf="lastRouting">
-    <div class="section-title">Last Routing Decision</div>
+    <div class="section-title">
+    Routing Decision — Payment #{{ lastRouting.payment.id }}
+    <span style="font-size:11px; color:#999; margin-left:8px;">
+        (click any payment row to view its routing)
+    </span>
+</div>
     <div class="routing-payment-info">
       Payment #{{ lastRouting.payment.id }} —
       ₹{{ lastRouting.payment.amount }} —
@@ -100,8 +105,9 @@
         </div>
         <span class="routing-state">{{ d.state }}</span>
         <span class="routing-selected" *ngIf="d.wasSelected">SELECTED ✓</span>
-        <span class="routing-skipped" *ngIf="!d.wasSelected && d.state === 'OPEN'">SKIPPED — circuit open</span>
-        <span class="routing-skipped" *ngIf="!d.wasSelected && d.state !== 'OPEN'">available</span>
+        <span class="routing-skipped" *ngIf="!d.wasSelected && d.wasAttempted && d.state !== 'OPEN'">ATTEMPTED — failed</span>
+        <span class="routing-skipped" *ngIf="!d.wasSelected && !d.wasAttempted && d.state === 'OPEN'">SKIPPED — circuit open</span>
+        <span class="routing-skipped" *ngIf="!d.wasSelected && !d.wasAttempted && d.state !== 'OPEN'">available</span>
       </div>
     </div>
     <div class="routing-note">
@@ -135,21 +141,28 @@
       <div class="table-wrap">
         <table>
           <thead>
-            <tr>
-              <th>Time</th>
-              <th>Processor</th>
-              <th>Amount</th>
-              <th>Status</th>
-            </tr>
+              <tr>
+                  <th>Initiated</th>
+                  <th>Completed</th>
+                  <th>Processor</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+              </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let p of payments"
-                [ngClass]="p.status === 'SUCCESS' ? 'row-success' : 'row-failed'">
-              <td>{{ formatTime(p.createdAt) }}</td>
-              <td>{{ p.processor }}</td>
-              <td>₹{{ p.amount }}</td>
-              <td class="status-cell">{{ p.status }}</td>
-            </tr>
+              <tr *ngFor="let p of payments"
+                  [ngClass]="p.status === 'SUCCESS' ? 'row-success' : 'row-failed'"
+                  (click)="selectPayment(p)"
+                  class="clickable-row">
+                  <td>{{ formatTime(p.createdAt) }}</td>
+                  <td>{{ formatTime(p.completedAt) }}</td>
+                  <td>
+                      {{ p.processor }}
+                      <span class="fallback-badge" *ngIf="p.usedFallback">fallback</span>
+                  </td>
+                  <td>₹{{ p.amount }}</td>
+                  <td class="status-cell">{{ p.status }}</td>
+              </tr>
           </tbody>
         </table>
       </div>

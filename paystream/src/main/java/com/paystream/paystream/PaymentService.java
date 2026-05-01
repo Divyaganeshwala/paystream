@@ -2,6 +2,8 @@ package com.paystream.paystream;
 
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,13 +37,21 @@ public class PaymentService {
 
     public String processPayment(PaymentRequest request) throws InterruptedException {
         List<PaymentProcessor> tried = new ArrayList<>();
+        List<PaymentProcessor> attempted = new ArrayList<>();
+        boolean usedFallback = false;
+
+        // Capture initiation time before any attempt
+        LocalDateTime initiatedAt = LocalDateTime.now(ZoneId.of("UTC"));
+
+        // Capture full snapshot BEFORE making any payment call
+        Map<String, Map<String, Object>> snapshot = routerService.getFullSnapshot();
 
         for (int attempt = 0; attempt < PaymentProcessor.values().length; attempt++) {
             PaymentProcessor processor = routerService.selectProcessor(tried);
             if (processor == null) break;
             tried.add(processor);
+            attempted.add(processor);
 
-            Map<String, Double> scoreSnapshot = routerService.getScoreSnapshot();
             long start = System.currentTimeMillis();
             boolean success;
 
@@ -56,36 +66,40 @@ public class PaymentService {
 
             redisService.recordPaymentResult(processor, success, latencyMs);
             if (success) routerService.recordSuccess(processor);
-            else routerService.recordFailure(processor);
+            else {
+                routerService.recordFailure(processor);
+                if (attempt > 0) usedFallback = true;
+            }
 
             if (success) {
                 Payment savedPayment = paymentRepository.save(
                         new Payment(request.getAmount(), request.getCurrency(),
-                                processor.name(), "SUCCESS")
+                                processor.name(), "SUCCESS", attempt > 0, initiatedAt)
                 );
-                saveRoutingLog(savedPayment.getId(), scoreSnapshot, processor);
+                saveRoutingLog(savedPayment.getId(), snapshot, processor, attempted);
                 return "Payment SUCCESS on: " + processor.name()
                         + " | Amount: " + request.getAmount()
                         + " | Attempts: " + (attempt + 1);
             }
         }
 
-        // all processors failed
         Payment savedPayment = paymentRepository.save(
-                new Payment(request.getAmount(), request.getCurrency(), "NONE", "FAILED")
+                new Payment(request.getAmount(), request.getCurrency(),
+                        "NONE", "FAILED", usedFallback, initiatedAt)
         );
         return "Payment FAILED on all processors | Amount: " + request.getAmount();
     }
 
-    private void saveRoutingLog(Long paymentId, Map<String, Double> scoreSnapshot,
-                                PaymentProcessor selected) {
+    private void saveRoutingLog(Long paymentId, Map<String, Map<String, Object>> snapshot,
+                                PaymentProcessor selected, List<PaymentProcessor> attempted) {
         for (PaymentProcessor p : PaymentProcessor.values()) {
-            ProcessorHealth health = routerService.getHealthMap().get(p);
+            Map<String, Object> data = snapshot.get(p.name());
+            double score = (double) data.get("score");
+            String state = (String) data.get("state");
+            boolean wasSelected = p == selected;
+            boolean wasAttempted = attempted.contains(p);
             routingLogRepository.save(new RoutingLog(
-                    paymentId, p.name(),
-                    scoreSnapshot.get(p.name()),
-                    health.getState().name(),
-                    p == selected
+                    paymentId, p.name(), score, state, wasSelected, wasAttempted
             ));
         }
     }

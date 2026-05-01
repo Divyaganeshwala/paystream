@@ -80,6 +80,7 @@ public class ProcessorHealth {
         }
     }
     public void recordFailure(ProcessorMetrics metrics, long lastMinuteCount) {
+        if (state == CircuitState.OPEN) return;
         CircuitState before = state;
         consecutiveFailures.incrementAndGet();
         consecutiveSuccesses.set(0);

@@ -192,18 +192,24 @@ export class AppComponent implements OnInit, OnDestroy {
         });
   }
   
-formatTime(dateStr: string): string {
-  if (!dateStr) return '';
-  // Always treat as UTC since we store UTC
-  const date = new Date(dateStr + 'Z');
-  return date.toLocaleTimeString('en-IN', { 
-    hour: '2-digit', 
-    minute: '2-digit', 
-    second: '2-digit', 
-    fractionalSecondDigits: 3,
-    hour12: false 
-  });
-}
+  formatTime(dateStr: string): string {
+    if (!dateStr) return '';
+    // Always treat as UTC since we store UTC
+    const date = new Date(dateStr + 'Z');
+    return date.toLocaleTimeString('en-IN', { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit', 
+      fractionalSecondDigits: 3,
+      hour12: false 
+    });
+  }
+
+  selectPayment(payment: any) {
+    this.http.get(`${this.apiUrl}/payments/${payment.id}/routing`).subscribe((routing: any) => {
+        this.lastRouting = { payment: payment, decisions: routing };
+    });
+  }
   
 }
 

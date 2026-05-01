@@ -17,16 +17,19 @@ public class RoutingLog {
     private double score;
     private String state;
     private boolean wasSelected;
+    private boolean wasAttempted;
     private LocalDateTime timestamp;
 
     public RoutingLog() {}
 
-    public RoutingLog(Long paymentId, String processorName, double score, String state, boolean wasSelected) {
+    public RoutingLog(Long paymentId, String processorName, double score, String state,
+                      boolean wasSelected, boolean wasAttempted) {
         this.paymentId = paymentId;
         this.processorName = processorName;
         this.score = score;
         this.state = state;
         this.wasSelected = wasSelected;
+        this.wasAttempted = wasAttempted;
         this.timestamp = LocalDateTime.now(ZoneId.of("UTC"));
     }
 
@@ -36,5 +39,6 @@ public class RoutingLog {
     public double getScore() { return score; }
     public String getState() { return state; }
     public boolean isWasSelected() { return wasSelected; }
+    public boolean isWasAttempted() { return wasAttempted; }
     public LocalDateTime getTimestamp() { return timestamp; }
 }
