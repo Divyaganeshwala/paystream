@@ -28,6 +28,12 @@
       <div class="stat-label">Success Rate</div>
       <div class="stat-value">{{ stats.successRate }}%</div>
     </div>
+        <div class="stat-card">
+        <div class="stat-label">Fallback Rate <span style="font-size:9px;color:#bbb">(last {{ stats.fallbackWindow }})</span></div>
+        <div class="stat-value">
+            {{ stats.fallbackRate }}%
+        </div>
+    </div>
   </div>
 
   <div class="section-title">Processor Health & Routing Scores</div>

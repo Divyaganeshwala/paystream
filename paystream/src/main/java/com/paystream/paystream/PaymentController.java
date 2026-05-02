@@ -79,13 +79,19 @@ public class PaymentController {
         long failed = paymentRepository.countByStatus("FAILED");
         double rate = total == 0 ? 0 : (success * 100.0) / total;
 
+        List<Payment> last200 = paymentRepository.findTop200ByOrderByCreatedAtDesc();
+        long fallbacks = last200.stream().filter(Payment::isUsedFallback).count();
+        double fallbackRate = last200.isEmpty() ? 0 :
+                Math.round((fallbacks * 100.0 / last200.size()) * 10.0) / 10.0;
+
         Map<String, Object> stats = new HashMap<>();
         stats.put("total", total);
         stats.put("success", success);
         stats.put("failed", failed);
         stats.put("successRate", Math.round(rate * 10.0) / 10.0);
+        stats.put("fallbackRate", fallbackRate);
+        stats.put("fallbackWindow", last200.size());
 
-        // Add per-processor counts
         Map<String, Long> handledPerProcessor = new HashMap<>();
         for (PaymentProcessor p : PaymentProcessor.values()) {
             handledPerProcessor.put(p.name(), paymentRepository.countByProcessor(p.name()));
