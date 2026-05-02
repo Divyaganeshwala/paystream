@@ -1,11 +1,14 @@
 package com.paystream.paystream;
 
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -33,7 +36,7 @@ public class PaymentController {
     }
 
     @PostMapping("/payment")
-    public String processPayment(@RequestBody PaymentRequest request) throws InterruptedException {
+    public String processPayment(@Valid @RequestBody PaymentRequest request) throws InterruptedException {
         return paymentService.processPayment(request).toString();
     }
 
@@ -114,5 +117,14 @@ public class PaymentController {
     public String flushRedis() {
         redisService.flushAll();
         return "Redis flushed. All processor scores reset.";
+    }
+
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<String> handleValidationErrors(
+            org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        String error = ex.getBindingResult().getFieldErrors().stream()
+                .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                .collect(Collectors.joining(", "));
+        return ResponseEntity.badRequest().body("Validation failed: " + error);
     }
 }
