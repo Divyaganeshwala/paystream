@@ -151,8 +151,24 @@ export class AppComponent implements OnInit, OnDestroy {
         this.loadPayments();
     });
   }
-
   runLoadTest() {
+    const payments = Number(this.loadTestCount);
+    const threads = Number(this.threadCount);
+
+    if (threads < 1 || threads > 20) {
+        this.loadTestResult = 'Payments must be between 1 and 200 & Threads must be between 1 and 20';
+        return;
+    }
+
+    if (payments < 1 || payments > 200) {
+        this.loadTestResult = 'Payments must be between 1 and 200';
+        return;
+    }
+    if (threads < 1 || threads > 20) {
+        this.loadTestResult = 'Threads must be between 1 and 20';
+        return;
+    }
+
     this.loadTestRunning = true;
     this.loadTestResult = '';
     
@@ -164,7 +180,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.loadEvents();
     }, 1000);
 
-    this.http.get(`${this.apiUrl}/loadtest/smart?payments=${this.loadTestCount}&threads=${this.threadCount}`,
+    this.http.get(`${this.apiUrl}/loadtest/smart?payments=${payments}&threads=${threads}`,
         { responseType: 'text' }
     ).subscribe(result => {
         this.loadTestResult = result;
