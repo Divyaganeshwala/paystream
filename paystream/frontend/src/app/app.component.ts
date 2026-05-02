@@ -212,4 +212,5 @@ export class AppComponent implements OnInit, OnDestroy {
         this.lastRouting = { payment: payment, decisions: routing };
     });
   }
+  
 }

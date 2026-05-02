@@ -118,22 +118,38 @@
   <div class="controls-section">
     <div class="section-title">Controls</div>
     <div class="controls">
-      <button class="btn-primary" (click)="sendPayment()" [disabled]="sendingPayment">
-          {{ sendingPayment ? 'Sending...' : 'Send Payment' }}
-      </button>
-      <div class="test-group">
-        <input type="number" [(ngModel)]="loadTestCount" min="1" max="200" class="count-input"/>
-        <input type="number" [(ngModel)]="threadCount" min="1" max="20" class="count-input" placeholder="Threads"/>
-        <button class="btn-secondary" (click)="runLoadTest()" [disabled]="loadTestRunning">
-          {{ loadTestRunning ? 'Running...' : 'Run Load Test' }}
-        </button>
-      </div>
-      <button class="btn-ghost" (click)="flushRedis()">Reset Scores</button>
+
+        <div class="control-group-tint">
+            <button class="btn-primary" (click)="sendPayment()" [disabled]="sendingPayment">
+                {{ sendingPayment ? 'Sending...' : 'Send Payment' }}
+            </button>
+        </div>
+
+        <div class="control-group-tint">
+            <div class="input-with-label">
+                <span class="input-label">Payments</span>
+                <input type="number" [(ngModel)]="loadTestCount" min="1" max="200" class="count-input"/>
+            </div>
+            <div class="input-with-label">
+                <span class="input-label">Threads</span>
+                <input type="number" [(ngModel)]="threadCount" min="1" max="20" class="count-input"/>
+            </div>
+            <button class="btn-secondary" (click)="runLoadTest()" [disabled]="loadTestRunning">
+                {{ loadTestRunning ? 'Running...' : 'Run Load Test' }}
+            </button>
+        </div>
+
+        <div class="controls-reset">
+            <div class="control-group-tint-red">
+                <button class="btn-danger" (click)="flushRedis()">Reset Scores</button>
+            </div>
+        </div>
+
     </div>
     <div class="load-test-result" *ngIf="loadTestResult">
-      {{ loadTestResult }}
+        {{ loadTestResult }}
     </div>
-  </div>
+</div>
 
   <div class="bottom-grid">
     <div class="panel">
