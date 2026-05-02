@@ -69,7 +69,8 @@ public class PaymentService {
                                 processor.name(), "SUCCESS", attempt > 0, initiatedAt)
                 );
                 saveRoutingLog(savedPayment.getId(), snapshot, processor, attempted);
-                return new PaymentResponse(true, processor.name(), request.getAmount(), attempt + 1, "SUCCESS");
+                return new PaymentResponse(true, processor.name(), request.getAmount(),
+                        attempt + 1, "SUCCESS", attempt > 0);
             }
         }
 
@@ -77,7 +78,8 @@ public class PaymentService {
                 new Payment(request.getAmount(), request.getCurrency(),
                         "NONE", "FAILED", usedFallback, initiatedAt)
         );
-        return new PaymentResponse(false, "NONE", request.getAmount(), tried.size(), "FAILED");
+        return new PaymentResponse(false, "NONE", request.getAmount(),
+                tried.size(), "FAILED", usedFallback);
     }
 
     private void saveRoutingLog(Long paymentId, Map<String, Map<String, Object>> snapshot,
