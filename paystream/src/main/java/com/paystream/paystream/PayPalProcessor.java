@@ -1,6 +1,5 @@
 package com.paystream.paystream;
 
-
 import com.paypal.base.rest.APIContext;
 import com.paypal.base.rest.PayPalRESTException;
 import org.slf4j.Logger;
@@ -11,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class PayPalProcessor {
+public class PayPalProcessor implements PaymentGateway {
 
     private static final Logger log = LoggerFactory.getLogger(PayPalProcessor.class);
 
@@ -21,6 +20,10 @@ public class PayPalProcessor {
     @Value("${paypal.client.secret}")
     private String clientSecret;
 
+    @Override
+    public PaymentProcessor getProcessor() { return PaymentProcessor.PAYPAL; }
+
+    @Override
     public boolean processPayment(String amount, String currency) {
         try {
             APIContext context = new APIContext(clientId, clientSecret, "sandbox");
@@ -49,8 +52,9 @@ public class PayPalProcessor {
             payment.setRedirectUrls(redirectUrls);
 
             com.paypal.api.payments.Payment createdPayment = payment.create(context);
-            log.info("PayPal payment created: {}", createdPayment.getId());
-            return true;
+            String state = createdPayment.getState();
+            log.info("PayPal payment created: {} | state: {}", createdPayment.getId(), state);
+            return "created".equalsIgnoreCase(state);
 
         } catch (PayPalRESTException e) {
             log.error("PayPal payment failed: {}", e.getMessage());

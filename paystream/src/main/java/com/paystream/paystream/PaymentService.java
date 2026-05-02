@@ -5,34 +5,32 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class PaymentService {
 
+    private final Map<PaymentProcessor, PaymentGateway> gateways;
     private final RouterService routerService;
     private final PaymentRepository paymentRepository;
-    private final RazorpayProcessor razorpayProcessor;
-    private final PayPalProcessor payPalProcessor;
-    private final CashfreeProcessor cashfreeProcessor;
     private final RedisService redisService;
     private final RoutingLogRepository routingLogRepository;
 
     public PaymentService(RouterService routerService,
                           PaymentRepository paymentRepository,
-                          RazorpayProcessor razorpayProcessor,
-                          PayPalProcessor payPalProcessor,
-                          CashfreeProcessor cashfreeProcessor,
+                          List<PaymentGateway> gatewayList,
                           RedisService redisService,
                           RoutingLogRepository routingLogRepository) {
         this.routerService = routerService;
         this.paymentRepository = paymentRepository;
-        this.razorpayProcessor = razorpayProcessor;
-        this.payPalProcessor = payPalProcessor;
-        this.cashfreeProcessor = cashfreeProcessor;
         this.redisService = redisService;
         this.routingLogRepository = routingLogRepository;
+        this.gateways = new HashMap<>();
+        for (PaymentGateway gateway : gatewayList) {
+            this.gateways.put(gateway.getProcessor(), gateway);
+        }
     }
 
     public PaymentResponse processPayment(PaymentRequest request) throws InterruptedException {
@@ -55,13 +53,7 @@ public class PaymentService {
             long start = System.currentTimeMillis();
             boolean success;
 
-            if (processor == PaymentProcessor.RAZORPAY) {
-                success = razorpayProcessor.processPayment(request.getAmount(), request.getCurrency());
-            } else if (processor == PaymentProcessor.PAYPAL) {
-                success = payPalProcessor.processPayment(request.getAmount(), request.getCurrency());
-            } else {
-                success = cashfreeProcessor.processPayment(request.getAmount(), request.getCurrency());
-            }
+            success = gateways.get(processor).processPayment(request.getAmount(), request.getCurrency());
             long latencyMs = System.currentTimeMillis() - start;
 
             redisService.recordPaymentResult(processor, success, latencyMs);

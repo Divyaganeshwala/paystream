@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class RazorpayProcessor {
+public class RazorpayProcessor implements PaymentGateway {
 
     @Value("${razorpay.key.id}")
     private String keyId;
@@ -20,6 +20,10 @@ public class RazorpayProcessor {
     private static final org.slf4j.Logger log =
             org.slf4j.LoggerFactory.getLogger(RazorpayProcessor.class);
 
+    @Override
+    public PaymentProcessor getProcessor() { return PaymentProcessor.RAZORPAY; }
+
+    @Override
     public boolean processPayment(String amount, String currency) {
         try {
             RazorpayClient client = new RazorpayClient(keyId, keySecret);

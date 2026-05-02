@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Service
-public class CashfreeProcessor {
+public class CashfreeProcessor implements PaymentGateway {
 
     private static final Logger log = LoggerFactory.getLogger(CashfreeProcessor.class);
 
@@ -25,6 +25,10 @@ public class CashfreeProcessor {
     private final RestTemplate restTemplate = new RestTemplate();
     private static final String SANDBOX_URL = "https://sandbox.cashfree.com/pg/orders";
 
+    @Override
+    public PaymentProcessor getProcessor() { return PaymentProcessor.CASHFREE; }
+
+    @Override
     public boolean processPayment(String amount, String currency) {
         try {
             HttpHeaders headers = new HttpHeaders();
