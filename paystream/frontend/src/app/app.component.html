@@ -28,195 +28,201 @@
       <div class="stat-label">Success Rate</div>
       <div class="stat-value">{{ stats.successRate }}%</div>
     </div>
-        <div class="stat-card">
-        <div class="stat-label">Fallback Rate <span style="font-size:9px;color:#bbb">(last {{ stats.fallbackWindow }})</span></div>
-        <div class="stat-value">
-            {{ stats.fallbackRate }}%
-        </div>
+    <div class="stat-card">
+      <div class="stat-label">Fallback Rate <span style="font-size:9px;color:#bbb">(last {{ stats.fallbackWindow }})</span></div>
+      <div class="stat-value">{{ stats.fallbackRate }}%</div>
     </div>
   </div>
 
-  <div class="section-title">Processor Health & Routing Scores</div>
-  <div class="processor-grid">
-    <div class="processor-card" *ngFor="let p of processors" [ngClass]="getStateClass(p.state)">
-      <div class="card-header">
-        <span class="processor-name">{{ p.name }}</span>
-        <span class="state-badge">{{ p.state }}</span>
-      </div>
+  <div class="main-grid">
 
-      <div class="score-section">
-        <div class="score-label">Routing Score</div>
-        <div class="score-value">{{ p.score | number:'1.1-1' }}</div>
-        <div class="score-bar-track">
-          <div class="score-bar-fill" [style.width.%]="(p.score / 100) * 100"></div>
-        </div>
-        <div class="score-hint" *ngIf="p.state === 'CLOSED'">Higher score = more traffic routed here</div>
-        <div class="score-hint open" *ngIf="p.state === 'OPEN'">Circuit open — no traffic until recovery</div>
-        <div class="score-hint half" *ngIf="p.state === 'HALF_OPEN'">Receiving probe payments to test recovery</div>
-      </div>
-      
-      <div class="metrics">
-        <div class="metric-row">
-          <span class="metric-label">Success Rate</span>
-          <span class="metric-value">{{ p.successRate }}%</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Avg Latency</span>
-          <span class="metric-value">{{ p.avgLatency | number:'1.0-0' }}ms</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Total Handled</span>
-          <span class="metric-value">{{ p.totalHandled }}</span>
-        </div>
-        <div class="metric-row" *ngIf="p.consecutiveFailures > 0 && p.state === 'CLOSED'">
-            <span class="metric-label">Consecutive Failures</span>
-            <span class="metric-value red">{{ p.consecutiveFailures }} / 3</span>
-        </div>
-        <div class="metric-row" *ngIf="p.state === 'HALF_OPEN'">
-          <span class="metric-label">Recovery Progress</span>
-          <span class="metric-value green">{{ p.consecutiveSuccesses }} / 3</span>
-        </div>
-      </div>
+    <div class="left-column">
 
-      <button class="simulate-btn" (click)="simulateFailure(p.name)">
-        Simulate Failure
-      </button>
-    </div>
-  </div>
-
-  <div class="routing-panel" *ngIf="lastRouting">
-    <div class="section-title">
-    Routing Decision — Payment #{{ lastRouting.payment.id }}
-    <span style="font-size:11px; color:#999; margin-left:8px;">
-        (click any payment row to view its routing)
-    </span>
-</div>
-    <div class="routing-payment-info">
-      Payment #{{ lastRouting.payment.id }} —
-      ₹{{ lastRouting.payment.amount }} —
-      {{ lastRouting.payment.processor }} —
-      <span [class]="lastRouting.payment.status === 'SUCCESS' ? 'green' : 'red'">
-        {{ lastRouting.payment.status }}
-      </span>
-    </div>
-    <div class="routing-decisions">
-      <div class="routing-row" *ngFor="let d of lastRouting.decisions"
-           [ngClass]="d.wasSelected ? 'selected-row' : ''">
-        <span class="routing-processor">{{ d.processorName }}</span>
-        <span class="routing-score">score: {{ d.score | number:'1.1-1' }}</span>
-        <div class="routing-bar-track">
-          <div class="routing-bar-fill"
-               [style.width.%]="(d.score / 100) * 100"
-               [ngClass]="d.wasSelected ? 'selected-bar' : ''"></div>
-        </div>
-        <span class="routing-state">{{ d.state }}</span>
-        <span class="routing-selected" *ngIf="d.wasSelected">SELECTED ✓</span>
-        <span class="routing-skipped" *ngIf="!d.wasSelected && d.wasAttempted && d.state !== 'OPEN'">ATTEMPTED — failed</span>
-        <span class="routing-skipped" *ngIf="!d.wasSelected && !d.wasAttempted && d.state === 'OPEN'">SKIPPED — circuit open</span>
-        <span class="routing-skipped" *ngIf="!d.wasSelected && !d.wasAttempted && d.state !== 'OPEN'">available</span>
-      </div>
-    </div>
-    <div class="routing-note">
-      Scores shown are captured at the moment of routing decision. Current scores on processor cards reflect live Redis data.
-    </div>
-  </div>
-
-  <div class="controls-section">
-    <div class="section-title">Controls</div>
-    <div class="controls">
-
-        <div class="control-group-tint">
-            <button class="btn-primary" (click)="sendPayment()" [disabled]="sendingPayment">
-                {{ sendingPayment ? 'Sending...' : 'Send Payment' }}
-            </button>
-        </div>
-
-        <div class="control-group-tint">
-            <div class="input-with-label">
-                <span class="input-label">Payments</span>
-                <input type="number" [(ngModel)]="loadTestCount" min="1" max="200" class="count-input"/>
+      <div class="section-title">Processor Health & Routing Scores</div>
+      <div class="processor-grid">
+        <div class="processor-card" *ngFor="let p of processors" [ngClass]="getStateClass(p.state)">
+          <div class="card-header">
+            <span class="processor-name">{{ p.name }}</span>
+            <span class="state-badge">{{ p.state }}</span>
+          </div>
+          <div class="score-section">
+            <div class="score-label">Routing Score</div>
+            <div class="score-value">{{ p.score | number:'1.1-1' }}</div>
+            <div class="score-bar-track">
+              <div class="score-bar-fill" [style.width.%]="(p.score / 100) * 100"></div>
             </div>
-            <div class="input-with-label">
-                <span class="input-label">Threads</span>
-                <input type="number" [(ngModel)]="threadCount" min="1" max="20" class="count-input"/>
+            <div class="score-hint" *ngIf="p.state === 'CLOSED'">Higher score = more traffic routed here</div>
+            <div class="score-hint open" *ngIf="p.state === 'OPEN'">Circuit open — no traffic until recovery</div>
+            <div class="score-hint half" *ngIf="p.state === 'HALF_OPEN'">Receiving probe payments to test recovery</div>
+          </div>
+          <div class="metrics">
+            <div class="metric-row">
+              <span class="metric-label">Success Rate</span>
+              <span class="metric-value">{{ p.successRate }}%</span>
             </div>
-            <button class="btn-secondary" (click)="runLoadTest()" [disabled]="loadTestRunning">
-                {{ loadTestRunning ? 'Running...' : 'Run Load Test' }}
-            </button>
-        </div>
-
-        <div class="controls-reset">
-            <div class="control-group-tint-red">
-                <button class="btn-danger" (click)="flushRedis()">Reset Scores</button>
+            <div class="metric-row">
+              <span class="metric-label">Avg Latency</span>
+              <span class="metric-value">{{ p.avgLatency | number:'1.0-0' }}ms</span>
             </div>
+            <div class="metric-row">
+              <span class="metric-label">Total Handled</span>
+              <span class="metric-value">{{ p.totalHandled }}</span>
+            </div>
+            <div class="metric-row" *ngIf="p.consecutiveFailures > 0 && p.state === 'CLOSED'">
+              <span class="metric-label">Failure Count</span>
+              <span class="metric-value red">{{ p.consecutiveFailures }} / 3</span>
+            </div>
+            <div class="metric-row" *ngIf="p.state === 'HALF_OPEN'">
+              <span class="metric-label">Recovery Progress</span>
+              <span class="metric-value green">{{ p.consecutiveSuccesses }} / 3</span>
+            </div>
+          </div>
+          <button class="simulate-btn" (click)="simulateFailure(p.name)">
+            Simulate Failure
+          </button>
         </div>
+      </div>
 
-    </div>
-    <div class="load-test-result" *ngIf="loadTestResult">
-        {{ loadTestResult }}
-    </div>
-</div>
+      <div class="routing-panel">
+        <ng-container *ngIf="lastRouting; else noRouting">
+          <div class="section-title">
+            Routing Decision — Payment #{{ lastRouting.payment.id }}
+            <span style="font-size:11px; color:#999; margin-left:8px;">(click any payment row to view its routing)</span>
+          </div>
+          <div class="routing-payment-info">
+            Payment #{{ lastRouting.payment.id }} —
+            ₹{{ lastRouting.payment.amount }} —
+            {{ lastRouting.payment.processor }} —
+            <span [class]="lastRouting.payment.status === 'SUCCESS' ? 'green' : 'red'">
+              {{ lastRouting.payment.status }}
+            </span>
+          </div>
+          <div class="routing-decisions">
+            <div class="routing-row" *ngFor="let d of lastRouting.decisions"
+                [ngClass]="d.wasSelected ? 'selected-row' : ''">
+              <span class="routing-processor">{{ d.processorName }}</span>
+              <span class="routing-score">score: {{ d.score | number:'1.1-1' }}</span>
+              <div class="routing-bar-track">
+                <div class="routing-bar-fill"
+                    [style.width.%]="(d.score / 100) * 100"
+                    [ngClass]="d.wasSelected ? 'selected-bar' : ''"></div>
+              </div>
+              <span class="routing-state">{{ d.state }}</span>
+              <span class="routing-selected" *ngIf="d.wasSelected">SELECTED ✓</span>
+              <span class="routing-skipped" *ngIf="!d.wasSelected && d.wasAttempted && d.state !== 'OPEN'">ATTEMPTED — failed</span>
+              <span class="routing-skipped" *ngIf="!d.wasSelected && !d.wasAttempted && d.state === 'OPEN'">SKIPPED — circuit open</span>
+              <span class="routing-skipped" *ngIf="!d.wasSelected && !d.wasAttempted && d.state !== 'OPEN'">available</span>
+            </div>
+          </div>
+          <div class="routing-note">
+            Scores shown are captured at the moment of routing decision. Current scores on processor cards reflect live Redis data.
+          </div>
+        </ng-container>
+        <ng-template #noRouting>
+          <div class="routing-empty">
+            <span>Click any payment row to view its routing decision</span>
+          </div>
+        </ng-template>
+      </div>
 
-  <div class="bottom-grid">
-    <div class="panel">
-      <div class="section-title">Payment History</div>
-      <div class="table-wrap">
-        <table class="payment-table">
-          <thead>
+    </div><!-- closes left-column -->
+
+    <div class="right-column">
+
+      <div class="panel">
+        <div class="section-title">Payment History</div>
+        <div class="table-wrap">
+          <table class="payment-table">
+            <thead>
               <tr>
-                  <th>Initiated</th>
-                  <th>Completed</th>
-                  <th>Processor</th>
-                  <th>Amount</th>
-                  <th>Status</th>
+                <th style="width:18%">Initiated</th>
+                <th style="width:18%">Completed</th>
+                <th style="width:28%">Processor</th>
+                <th style="width:14%">Amount</th>
+                <th style="width:12%">Status</th>
               </tr>
-          </thead>
-          <tbody>
+            </thead>
+            <tbody>
               <tr *ngFor="let p of payments"
                   [ngClass]="{
-                      'row-success': p.status === 'SUCCESS' && p.id !== selectedPaymentId,
-                      'row-failed': p.status === 'FAILED' && p.id !== selectedPaymentId,
-                      'row-selected': p.id === selectedPaymentId
+                    'row-success': p.status === 'SUCCESS' && p.id !== selectedPaymentId,
+                    'row-failed': p.status === 'FAILED' && p.id !== selectedPaymentId,
+                    'row-selected': p.id === selectedPaymentId
                   }"
                   (click)="selectPayment(p)"
                   class="clickable-row">
-                  <td>{{ formatTime(p.createdAt) }}</td>
-                  <td>{{ formatTime(p.completedAt) }}</td>
-                  <td>
-                      {{ p.processor }}
-                      <span class="fallback-badge" *ngIf="p.usedFallback">fallback</span>
-                  </td>
-                  <td>₹{{ p.amount }}</td>
-                  <td class="status-cell">{{ p.status }}</td>
+                <td>{{ formatTime(p.createdAt) }}</td>
+                <td>{{ formatTime(p.completedAt) }}</td>
+                <td>
+                  {{ p.processor }}
+                  <span class="fallback-badge" *ngIf="p.usedFallback">fallback</span>
+                </td>
+                <td>₹{{ p.amount }}</td>
+                <td class="status-cell">{{ p.status }}</td>
               </tr>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Circuit Breaker Events</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:18%">Time</th>
+                <th style="width:18%">Processor</th>
+                <th style="width:28%">Transition</th>
+                <th style="width:36%">Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let e of events">
+                <td>{{ formatTime(e.timeStamp) }}</td>
+                <td>{{ e.processorName }}</td>
+                <td class="transition">{{ e.fromState }} → {{ e.toState }}</td>
+                <td class="reason">{{ e.reason }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- closes right-column -->
+
+  </div><!-- closes main-grid -->
+
+  <div class="controls-section" style="margin-top: 12px;">
+    <div class="section-title">Controls</div>
+    <div class="controls">
+      <div class="control-group-tint">
+        <button class="btn-primary" (click)="sendPayment()" [disabled]="sendingPayment">
+          {{ sendingPayment ? 'Sending...' : 'Send Payment' }}
+        </button>
+      </div>
+      <div class="control-group-tint">
+        <div class="input-with-label">
+          <span class="input-label">Payments</span>
+          <input type="number" [(ngModel)]="loadTestCount" min="1" max="200" class="count-input"/>
+        </div>
+        <div class="input-with-label">
+          <span class="input-label">Threads</span>
+          <input type="number" [(ngModel)]="threadCount" min="1" max="20" class="count-input"/>
+        </div>
+        <button class="btn-secondary" (click)="runLoadTest()" [disabled]="loadTestRunning">
+          {{ loadTestRunning ? 'Running...' : 'Run Load Test' }}
+        </button>
+      </div>
+      <div class="controls-reset">
+        <div class="control-group-tint-red">
+          <button class="btn-danger" (click)="flushRedis()">Reset Scores</button>
+        </div>
       </div>
     </div>
-
-    <div class="panel">
-      <div class="section-title">Circuit Breaker Events</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Time</th>
-              <th>Processor</th>
-              <th>Transition</th>
-              <th>Reason</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let e of events">
-              <td>{{ formatTime(e.timeStamp) }}</td>
-              <td>{{ e.processorName }}</td>
-              <td class="transition">{{ e.fromState }} → {{ e.toState }}</td>
-              <td class="reason">{{ e.reason }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <div class="load-test-result" *ngIf="loadTestResult">
+      {{ loadTestResult }}
     </div>
   </div>
 
-</div>
+</div><!-- closes dashboard -->
