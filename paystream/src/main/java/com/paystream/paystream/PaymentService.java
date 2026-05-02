@@ -35,7 +35,7 @@ public class PaymentService {
         this.routingLogRepository = routingLogRepository;
     }
 
-    public String processPayment(PaymentRequest request) throws InterruptedException {
+    public PaymentResponse processPayment(PaymentRequest request) throws InterruptedException {
         List<PaymentProcessor> tried = new ArrayList<>();
         List<PaymentProcessor> attempted = new ArrayList<>();
         boolean usedFallback = false;
@@ -77,9 +77,7 @@ public class PaymentService {
                                 processor.name(), "SUCCESS", attempt > 0, initiatedAt)
                 );
                 saveRoutingLog(savedPayment.getId(), snapshot, processor, attempted);
-                return "Payment SUCCESS on: " + processor.name()
-                        + " | Amount: " + request.getAmount()
-                        + " | Attempts: " + (attempt + 1);
+                return new PaymentResponse(true, processor.name(), request.getAmount(), attempt + 1, "SUCCESS");
             }
         }
 
@@ -87,7 +85,7 @@ public class PaymentService {
                 new Payment(request.getAmount(), request.getCurrency(),
                         "NONE", "FAILED", usedFallback, initiatedAt)
         );
-        return "Payment FAILED on all processors | Amount: " + request.getAmount();
+        return new PaymentResponse(false, "NONE", request.getAmount(), tried.size(), "FAILED");
     }
 
     private void saveRoutingLog(Long paymentId, Map<String, Map<String, Object>> snapshot,

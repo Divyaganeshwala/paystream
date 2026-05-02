@@ -31,12 +31,11 @@ public class LoadTestService {
                     PaymentRequest request = new PaymentRequest();
                     request.setAmount("100");
                     request.setCurrency("INR");
-                    String response = paymentService.processPayment(request);
-                    if (response.contains("SUCCESS")) success.incrementAndGet();
+                    PaymentResponse response = paymentService.processPayment(request);
+                    if (response.isSuccess()) success.incrementAndGet();
                     else failed.incrementAndGet();
 
-                    if (response.contains("Attempts: 2")) totalRetries.incrementAndGet();
-                    else if (response.contains("Attempts: 3")) totalRetries.addAndGet(2);
+                    if (response.getAttempts() > 1) totalRetries.addAndGet(response.getAttempts() - 1);
 
                 } catch (Exception e) {
                     failed.incrementAndGet();

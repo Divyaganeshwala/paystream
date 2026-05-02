@@ -34,7 +34,7 @@ public class PaymentController {
 
     @PostMapping("/payment")
     public String processPayment(@RequestBody PaymentRequest request) throws InterruptedException {
-        return paymentService.processPayment(request);
+        return paymentService.processPayment(request).toString();
     }
 
     @GetMapping("/payments")
