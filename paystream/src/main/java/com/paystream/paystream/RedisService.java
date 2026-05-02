@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
+import org.springframework.data.redis.core.RedisCallback;
 
 @Service
 public class RedisService {
@@ -53,6 +54,9 @@ public class RedisService {
     }
 
     public void flushAll() {
-        redisTemplate.getConnectionFactory().getConnection().serverCommands().flushAll();
+        redisTemplate.execute((RedisCallback<Void>) connection -> {
+            connection.serverCommands().flushAll();
+            return null;
+        });
     }
 }
