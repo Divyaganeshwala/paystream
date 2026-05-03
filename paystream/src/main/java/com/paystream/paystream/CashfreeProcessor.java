@@ -22,8 +22,13 @@ public class CashfreeProcessor implements PaymentGateway {
     @Value("${cashfree.client.secret}")
     private String clientSecret;
 
+    private final ProcessorSimulator simulator;
     private final RestTemplate restTemplate = new RestTemplate();
     private static final String SANDBOX_URL = "https://sandbox.cashfree.com/pg/orders";
+
+    public CashfreeProcessor(ProcessorSimulator simulator) {
+        this.simulator = simulator;
+    }
 
     @Override
     public PaymentProcessor getProcessor() { return PaymentProcessor.CASHFREE; }
@@ -59,6 +64,12 @@ public class CashfreeProcessor implements PaymentGateway {
             if (response.getStatusCode() == HttpStatus.OK || response.getStatusCode() == HttpStatus.CREATED) {
                 Map responseBody = response.getBody();
                 log.info("Cashfree order created: {}", responseBody.get("order_id"));
+
+                // API succeeded — now apply realistic failure simulation
+                if (simulator.shouldFail(PaymentProcessor.CASHFREE)) {
+                    log.warn("Cashfree simulated decline (6% rate — high reliability gateway)");
+                    return false;
+                }
                 return true;
             }
             return false;

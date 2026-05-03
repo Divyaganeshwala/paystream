@@ -17,8 +17,14 @@ public class RazorpayProcessor implements PaymentGateway {
     @Value("${razorpay.key.secret}")
     private String keySecret;
 
+    private final ProcessorSimulator simulator;
+
     private static final org.slf4j.Logger log =
             org.slf4j.LoggerFactory.getLogger(RazorpayProcessor.class);
+
+    public RazorpayProcessor(ProcessorSimulator simulator) {
+        this.simulator = simulator;
+    }
 
     @Override
     public PaymentProcessor getProcessor() { return PaymentProcessor.RAZORPAY; }
@@ -35,6 +41,12 @@ public class RazorpayProcessor implements PaymentGateway {
 
             Order order = client.orders.create(orderRequest);
             log.info("Razorpay order created: {}", Optional.ofNullable(order.get("id")));
+
+            // API succeeded — now apply realistic failure simulation
+            if (simulator.shouldFail(PaymentProcessor.RAZORPAY)) {
+                log.warn("Razorpay simulated decline (8% rate — real-world aggregator PSR)");
+                return false;
+            }
             return true;
 
         } catch (Exception e) {

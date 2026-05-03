@@ -20,6 +20,12 @@ public class PayPalProcessor implements PaymentGateway {
     @Value("${paypal.client.secret}")
     private String clientSecret;
 
+    private final ProcessorSimulator simulator;
+
+    public PayPalProcessor(ProcessorSimulator simulator) {
+        this.simulator = simulator;
+    }
+
     @Override
     public PaymentProcessor getProcessor() { return PaymentProcessor.PAYPAL; }
 
@@ -54,7 +60,15 @@ public class PayPalProcessor implements PaymentGateway {
             com.paypal.api.payments.Payment createdPayment = payment.create(context);
             String state = createdPayment.getState();
             log.info("PayPal payment created: {} | state: {}", createdPayment.getId(), state);
-            return "created".equalsIgnoreCase(state);
+
+            if (!"created".equalsIgnoreCase(state)) return false;
+
+            // API succeeded — now apply realistic failure simulation
+            if (simulator.shouldFail(PaymentProcessor.PAYPAL)) {
+                log.warn("PayPal simulated decline (12% rate — cross-border friction)");
+                return false;
+            }
+            return true;
 
         } catch (PayPalRESTException e) {
             log.error("PayPal payment failed: {}", e.getMessage());
