@@ -25,9 +25,9 @@ public class ProcessorSimulator {
 
     public boolean shouldFail(PaymentProcessor processor) {
         double failureRate = switch (processor) {
-            case RAZORPAY -> 0.06;
-            case CASHFREE -> 0.10;
-            case PAYPAL   -> 0.08;
+            case RAZORPAY -> 0.03;
+            case CASHFREE -> 0.08;
+            case PAYPAL   -> 0.05;
         };
         return random.nextDouble() < failureRate;
     }
