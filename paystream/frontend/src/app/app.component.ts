@@ -140,16 +140,15 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     });
   }
-
-  simulateFailure(processorName: string) {
-    this.http.post(`${this.apiUrl}/simulate/failure/${processorName}`, {},
-        { responseType: 'text' }
-    ).subscribe(() => {
-        this.pollHealth();
-        this.loadEvents();
-        this.loadStats();
-        this.loadPayments();
-    });
+  forceOpen(processorName: string) {
+      this.http.post(`${this.apiUrl}/simulate/forceopen/${processorName}`, {},
+          { responseType: 'text' }
+      ).subscribe(() => {
+          this.pollHealth();
+          this.loadEvents();
+          this.loadStats();
+          this.loadPayments();
+      });
   }
   runLoadTest() {
     const payments = Number(this.loadTestCount);
@@ -227,6 +226,51 @@ export class AppComponent implements OnInit, OnDestroy {
     this.http.get(`${this.apiUrl}/payments/${payment.id}/routing`).subscribe((routing: any) => {
         this.lastRouting = { payment: payment, decisions: routing };
     });
+  }
+
+    confirmForceOpen(processorName: string) {
+      const dialogRef = document.createElement('div');
+      dialogRef.innerHTML = `
+          <div style="
+              position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+              background: rgba(0,0,0,0.3); display: flex; align-items: center;
+              justify-content: center; z-index: 1000;">
+              <div style="
+                  background: white; border-radius: 10px; padding: 24px 28px;
+                  box-shadow: 0 8px 32px rgba(0,0,0,0.15); max-width: 360px; width: 90%;">
+                  <div style="font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px;">
+                      Force Open Circuit
+                  </div>
+                  <div style="font-size: 13px; color: #666; margin-bottom: 20px; line-height: 1.5;">
+                      This will immediately open the <strong>${processorName}</strong> circuit breaker,
+                      blocking all traffic until recovery. Continue?
+                  </div>
+                  <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                      <button id="cancel-btn" style="
+                          padding: 7px 16px; background: white; color: #666;
+                          border: 1px solid #ddd; border-radius: 6px; font-size: 13px;
+                          cursor: pointer;">
+                          Cancel
+                      </button>
+                      <button id="confirm-btn" style="
+                          padding: 7px 16px; background: #c62828; color: white;
+                          border: none; border-radius: 6px; font-size: 13px;
+                          cursor: pointer; font-weight: 500;">
+                          Force OPEN
+                      </button>
+                  </div>
+              </div>
+          </div>
+      `;
+      document.body.appendChild(dialogRef);
+
+      document.getElementById('cancel-btn')!.onclick = () => {
+          document.body.removeChild(dialogRef);
+      };
+      document.getElementById('confirm-btn')!.onclick = () => {
+          document.body.removeChild(dialogRef);
+          this.forceOpen(processorName);
+      };
   }
   
 }

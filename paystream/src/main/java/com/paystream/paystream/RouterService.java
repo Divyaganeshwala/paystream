@@ -84,4 +84,8 @@ public class RouterService {
         long lastMinuteCount = redisService.getLastMinuteCount(processor);
         healthMap.get(processor).recordFailure(metrics, lastMinuteCount);
     }
+
+    public void forceOpen(PaymentProcessor processor) {
+        healthMap.get(processor).forceOpen();
+    }
 }

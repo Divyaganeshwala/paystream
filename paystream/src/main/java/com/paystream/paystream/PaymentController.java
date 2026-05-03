@@ -105,15 +105,13 @@ public class PaymentController {
         return circuitBreakerEventRepository.findTop50ByOrderByTimestampDesc();
     }
 
-    @PostMapping("/simulate/failure/{processorName}")
-    public String simulateFailure(@PathVariable String processorName) {
+    @PostMapping("/simulate/forceopen/{processorName}")
+    public String forceOpen(@PathVariable String processorName) {
         try {
             PaymentProcessor processor = PaymentProcessor.valueOf(processorName.toUpperCase());
-            routerService.recordFailure(processor);
+            routerService.forceOpen(processor);
             ProcessorHealth health = routerService.getHealthMap().get(processor);
-            return processorName + " failure recorded"
-                    + " | State: " + health.getState()
-                    + " | consecutiveFailures: " + health.getFailureCount();
+            return processorName + " forced OPEN | State: " + health.getState();
         } catch (IllegalArgumentException e) {
             return "Unknown processor: " + processorName;
         }

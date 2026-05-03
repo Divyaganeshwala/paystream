@@ -74,6 +74,21 @@ public class ProcessorHealth {
         recordFailure(new ProcessorMetrics(100.0, 0.0), 0);
     }
 
+    public void forceOpen() {
+        lock.lock();
+        try {
+            if (state == CircuitState.OPEN) return;
+            CircuitState before = state;
+            state = CircuitState.OPEN;
+            openedAt = LocalDateTime.now();
+            consecutiveFailures.set(3);
+            consecutiveSuccesses.set(0);
+            notifyStateChange(before, state, "Manually forced OPEN");
+        } finally {
+            lock.unlock();
+        }
+    }
+
     public void recordSuccess() {
         lock.lock();
         try {

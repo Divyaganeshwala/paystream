@@ -77,9 +77,14 @@
               <span class="metric-value green">{{ p.consecutiveSuccesses }} / 3</span>
             </div>
           </div>
-          <button class="simulate-btn" (click)="simulateFailure(p.name)">
-            Simulate Failure
+          <button class="simulate-btn" 
+              (click)="confirmForceOpen(p.name)"
+              *ngIf="p.state === 'CLOSED' || p.state === 'HALF_OPEN'">
+              Force OPEN
           </button>
+          <div class="circuit-open-indicator" *ngIf="p.state === 'OPEN'">
+              Circuit is OPEN
+          </div>
         </div>
       </div>
 
