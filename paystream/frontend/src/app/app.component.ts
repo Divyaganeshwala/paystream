@@ -141,14 +141,17 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
   forceOpen(processorName: string) {
-      this.http.post(`${this.apiUrl}/simulate/forceopen/${processorName}`, {},
-          { responseType: 'text' }
-      ).subscribe(() => {
-          this.pollHealth();
-          this.loadEvents();
-          this.loadStats();
-          this.loadPayments();
-      });
+    this.http.post(`${this.apiUrl}/simulate/forceopen/${processorName}`, {},
+        { 
+            responseType: 'text',
+            headers: { 'X-Admin-Key': 'paystream-admin' }
+        }
+    ).subscribe(() => {
+        this.pollHealth();
+        this.loadEvents();
+        this.loadStats();
+        this.loadPayments();
+    });
   }
   runLoadTest() {
     const payments = Number(this.loadTestCount);
@@ -202,11 +205,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   flushRedis() {
     if (!confirm('Reset all processor scores? This will wipe all Redis data.')) return;
-    this.http.post(`${this.apiUrl}/redis/flush`, {}, { responseType: 'text' })
-        .subscribe(() => {
-            this.pollHealth();
-            this.loadStats();
-        });
+    this.http.post(`${this.apiUrl}/redis/flush`, {}, 
+        { 
+            responseType: 'text',
+            headers: { 'X-Admin-Key': 'paystream-admin' }
+        }
+    ).subscribe(() => {
+        this.pollHealth();
+        this.loadStats();
+    });
   }
   
   formatTime(dateStr: string): string {

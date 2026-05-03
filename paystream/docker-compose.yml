@@ -37,6 +37,7 @@ services:
       PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET}
       CASHFREE_CLIENT_ID: ${CASHFREE_CLIENT_ID}
       CASHFREE_CLIENT_SECRET: ${CASHFREE_CLIENT_SECRET}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
     depends_on:
       - postgres
       - redis

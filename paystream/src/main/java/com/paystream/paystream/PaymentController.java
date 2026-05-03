@@ -1,6 +1,7 @@
 package com.paystream.paystream;
 
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,8 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final CircuitBreakerEventRepository circuitBreakerEventRepository;
     private final RoutingLogRepository routingLogRepository;
+    @Value("${admin.api.key}")
+    private String adminApiKey;
 
     public PaymentController(RouterService routerService,
                              PaymentRepository paymentRepository,
@@ -33,6 +36,7 @@ public class PaymentController {
         this.paymentService = paymentService;
         this.circuitBreakerEventRepository = circuitBreakerEventRepository;
         this.routingLogRepository = routingLogRepository;
+
     }
 
     @PostMapping("/payment")
@@ -106,21 +110,30 @@ public class PaymentController {
     }
 
     @PostMapping("/simulate/forceopen/{processorName}")
-    public String forceOpen(@PathVariable String processorName) {
+    public ResponseEntity<String> forceOpen(
+            @PathVariable String processorName,
+            @RequestHeader(value = "X-Admin-Key", required = false) String apiKey) {
+        if (!adminApiKey.equals(apiKey)) {
+            return ResponseEntity.status(403).body("Forbidden: invalid admin key");
+        }
         try {
             PaymentProcessor processor = PaymentProcessor.valueOf(processorName.toUpperCase());
             routerService.forceOpen(processor);
             ProcessorHealth health = routerService.getHealthMap().get(processor);
-            return processorName + " forced OPEN | State: " + health.getState();
+            return ResponseEntity.ok(processorName + " forced OPEN | State: " + health.getState());
         } catch (IllegalArgumentException e) {
-            return "Unknown processor: " + processorName;
+            return ResponseEntity.badRequest().body("Unknown processor: " + processorName);
         }
     }
 
     @PostMapping("/redis/flush")
-    public String flushRedis() {
+    public ResponseEntity<String> flushRedis(
+            @RequestHeader(value = "X-Admin-Key", required = false) String apiKey) {
+        if (!adminApiKey.equals(apiKey)) {
+            return ResponseEntity.status(403).body("Forbidden: invalid admin key");
+        }
         redisService.flushAll();
-        return "Redis flushed. All processor scores reset.";
+        return ResponseEntity.ok("Redis flushed. All processor scores reset.");
     }
 
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
